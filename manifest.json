@@ -1,0 +1,17 @@
+{
+  "name": "Qalqon Antiradar - ContraCam",
+  "short_name": "Antiradar",
+  "description": "Haydovchilar uchun radarlar va kameralarni oldindan ogohlantiruvchi tizim",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#0a0e17",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%230a0e17' stroke='%2300f2fe' stroke-width='4'/><path d='M50 18 L62 42 L88 46 L68 64 L74 90 L50 76 L26 90 L32 64 L12 46 L38 42 Z' fill='%2300f2fe'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

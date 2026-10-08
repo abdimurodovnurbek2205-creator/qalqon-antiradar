@@ -1,0 +1,13 @@
+# Video fayllar (keraksiz katta hajm)
+*.mp4
+*.m4v
+
+# Python kesh
+__pycache__/
+*.pyc
+
+# Muhit va xavfsizlik
+.env
+.env.local
+.DS_Store
+Thumbs.db

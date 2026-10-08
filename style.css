@@ -1,0 +1,1075 @@
+:root {
+  --bg-primary: #070a10;
+  --bg-secondary: #0d131f;
+  --bg-card: rgba(14, 20, 32, 0.88);
+  --accent-cyan: #00f2fe;
+  --accent-blue: #38bdf8;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+  --text-main: #f8fafc;
+  --text-dim: #94a3b8;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-active: #00f2fe;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  user-select: none;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+header {
+  height: 56px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 1000;
+  flex-shrink: 0;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #00f2fe, #2563eb);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(0, 242, 254, 0.4);
+}
+
+.logo-text h1 {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #fff;
+}
+
+.logo-text span {
+  font-size: 10px;
+  color: var(--accent-cyan);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+/* GPS Live Indicator */
+.gps-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-green);
+}
+
+.gps-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 10px var(--accent-green);
+  animation: pulse-gps 1.5s infinite;
+}
+
+@keyframes pulse-gps {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--accent-cyan);
+}
+
+.btn-icon.active {
+  background: var(--accent-red);
+  color: #fff;
+  border-color: var(--accent-red);
+}
+
+/* Main Workspace */
+.main-workspace {
+  flex: 1;
+  position: relative;
+  display: flex;
+  overflow: hidden;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  background: #0a0e17;
+}
+
+/* Suzuvchi Haydovchi Kokpit HUD */
+.driver-hud-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  max-width: 520px;
+  margin: 0 auto;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.driver-hud-overlay > * {
+  pointer-events: auto;
+}
+
+/* Spidometr & Cheklov Card */
+.speed-cluster-hud {
+  background: var(--bg-card);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s;
+}
+
+.speed-cluster-hud.overspeed {
+  border-color: var(--accent-red);
+  background: linear-gradient(135deg, rgba(60, 10, 20, 0.95), rgba(20, 10, 15, 0.95));
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.5);
+  animation: pulse-danger 0.7s infinite alternate;
+}
+
+@keyframes pulse-danger {
+  from { border-color: rgba(239, 68, 68, 0.5); }
+  to { border-color: rgba(239, 68, 68, 1); }
+}
+
+.speed-box {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.speed-num {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -2px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+/* Yo'l belgisi (Red circle speed sign) */
+.limit-sign-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.limit-sign {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: 6px solid #dc2626;
+  background: #ffffff;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 900;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.limit-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.status-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.fine-pill {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.fine-pill.danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.bearing-info {
+  font-size: 12px;
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+/* Faol Ogohlantirish Kartasi (ContraCam Banner) */
+.active-warning-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(18px);
+  border-radius: 18px;
+  padding: 16px 20px;
+  border-left: 6px solid var(--accent-cyan);
+  border: 1px solid var(--border-subtle);
+  border-left-width: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s;
+}
+
+.active-warning-card.danger {
+  border-left-color: var(--accent-red);
+  background: rgba(35, 12, 18, 0.95);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+}
+
+.warning-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cam-icon-tag {
+  font-size: 30px;
+}
+
+.cam-title-box h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.cam-title-box p {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.countdown-dist {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--accent-cyan);
+  font-variant-numeric: tabular-nums;
+}
+
+.active-warning-card.danger .countdown-dist {
+  color: var(--accent-red);
+}
+
+.countdown-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.countdown-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+  transition: width 0.2s linear;
+}
+
+.active-warning-card.danger .countdown-progress-fill {
+  background: linear-gradient(90deg, var(--accent-yellow), var(--accent-red));
+}
+
+.warning-voice-msg {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Pastki O'ngdagi Mini-ro'yxat */
+.upcoming-floating-card {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  max-height: 240px;
+  background: var(--bg-card);
+  backdrop-filter: blur(18px);
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  padding: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 998;
+  display: flex;
+  flex-direction: column;
+}
+
+.upcoming-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-transform: uppercase;
+}
+
+.upcoming-mini-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cam-item-row {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cam-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cam-type-badge {
+  font-size: 16px;
+}
+
+.cam-item-text b {
+  font-size: 12px;
+  display: block;
+}
+
+.cam-item-text span {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.cam-item-dist {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Bottom Controls */
+.bottom-panel {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  padding: 12px 16px;
+  z-index: 1000;
+  flex-shrink: 0;
+}
+
+.sim-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.sim-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.sim-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Fullscreen HUD Mode */
+/* Tungi Kokpit HUD Rejimi */
+body.hud-mode {
+  background: #000000 !important;
+}
+
+body.hud-mode header,
+body.hud-mode .main-workspace,
+body.hud-mode .bottom-panel {
+  display: none !important;
+}
+
+body.hud-mode .hud-screen {
+  display: flex !important;
+}
+
+.hud-screen {
+  display: none;
+  height: 100vh;
+  width: 100vw;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #000000;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+
+/* HUD Yuqori Boshqaruv Qatori */
+.hud-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  z-index: 10;
+}
+
+.hud-title-tag span {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+}
+
+.hud-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hud-ctrl-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.hud-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: var(--accent-cyan);
+}
+
+.hud-ctrl-btn.active {
+  background: rgba(0, 242, 254, 0.2);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.hud-ctrl-btn.exit-btn {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
+.hud-ctrl-btn.exit-btn:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* HUD Markaziy Maydoni */
+.hud-content-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  flex: 1;
+  transition: transform 0.3s ease;
+}
+
+/* Faqat ko'zgu rejimi yoqilganda markaziy maydon teskari akslanadi */
+.hud-content-center.hud-mirror-active {
+  transform: scaleX(-1);
+}
+
+.hud-speed-wrapper {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 12px;
+}
+
+.hud-speed {
+  font-size: 160px;
+  font-weight: 900;
+  color: #00ff66;
+  text-shadow: 0 0 50px rgba(0, 255, 102, 0.6);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-speed.overspeed {
+  color: #ff0033;
+  text-shadow: 0 0 65px rgba(255, 0, 51, 0.85);
+  animation: pulse-hud-danger 0.6s infinite alternate;
+}
+
+@keyframes pulse-hud-danger {
+  from { opacity: 0.8; }
+  to { opacity: 1; transform: scale(1.02); }
+}
+
+.hud-speed-unit {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  letter-spacing: 2px;
+}
+
+.hud-alert-box {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 4px solid #00ff66;
+  padding: 18px 36px;
+  border-radius: 28px;
+  box-shadow: 0 0 40px rgba(0, 255, 102, 0.2);
+  transition: all 0.3s;
+}
+
+.hud-alert-box.overspeed {
+  border-color: #ff0033;
+  background: rgba(255, 0, 51, 0.2);
+  box-shadow: 0 0 50px rgba(255, 0, 51, 0.4);
+}
+
+.hud-cam-limit {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  border: 7px solid #ff0033;
+  background: #ffffff;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  font-weight: 900;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.hud-dist-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hud-cam-dist {
+  font-size: 48px;
+  font-weight: 900;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.hud-cam-road {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+/* Pastki Tushuntirish Ko'rsatmasi */
+.hud-bottom-tip {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 20px;
+  border-radius: 12px;
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+/* Yangi Qo'shimcha Stillar */
+.btn-icon.active-glow {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.35);
+  color: var(--accent-cyan);
+}
+
+.sim-btn.active {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 242, 254, 0.12);
+  color: var(--accent-cyan);
+}
+
+/* Audio Prompt Pill */
+.audio-prompt-pill {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--accent-cyan);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 997;
+  cursor: pointer;
+  animation: bounce-pill 2s infinite ease-in-out;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.audio-prompt-pill.fade-out {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(20px);
+}
+
+@keyframes bounce-pill {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
+}
+
+/* Sozlamalar Drawer */
+.settings-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
+  background: rgba(13, 19, 31, 0.97);
+  backdrop-filter: blur(24px);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.8);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-drawer.hidden {
+  transform: translateX(100%);
+  pointer-events: none;
+}
+
+.settings-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-header h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.btn-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-item label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.setting-item select,
+.setting-item input[type="range"] {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.setting-item select:focus {
+  border-color: var(--accent-cyan);
+}
+
+.setting-item select option {
+  background: #0d131f;
+  color: #fff;
+}
+
+/* Maxsus 3D Navigatsiya Strelkasi (ContraCam & Yandex uslubi) */
+.nav-arrow-container {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.nav-arrow-wrapper {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* Oldinga tushadigan Radar Sektori Nuri (Radar Vision Beam) */
+.radar-cone-beam {
+  position: absolute;
+  top: -85px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 85px;
+  background: radial-gradient(ellipse at bottom, rgba(0, 242, 254, 0.45) 0%, rgba(0, 242, 254, 0.15) 55%, rgba(0, 242, 254, 0) 80%);
+  clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+  pointer-events: none;
+  animation: radar-pulse-cone 2s infinite ease-in-out;
+}
+
+@keyframes radar-pulse-cone {
+  0%, 100% { opacity: 0.65; transform: translateX(-50%) scaleY(1); }
+  50% { opacity: 1; transform: translateX(-50%) scaleY(1.1); }
+}
+
+.nav-arrow-body {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 14px rgba(0, 242, 254, 0.9));
+}
+
+.nav-gps-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #00f2fe;
+  box-shadow: 0 0 10px #00f2fe;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Xarita tugmalari va yangi rejimlar */
+.btn-layer-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-layer-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-cyan);
+}
+
+/* ============================================================
+   RADAR BELGILASH MODALI VA HAMJAMIYAT (COMMUNITY REPORTS)
+   ============================================================ */
+.report-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+  animation: fadeInModal 0.25s ease-out;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.report-modal-box {
+  background: #0f1422;
+  border: 1px solid rgba(0, 242, 254, 0.35);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 242, 254, 0.15);
+  border-radius: 20px;
+  max-width: 440px;
+  width: 100%;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.report-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.report-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-subtitle {
+  margin: 0 0 18px 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.report-type-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #fff;
+}
+
+.report-type-btn .report-icon {
+  font-size: 26px;
+}
+
+.report-type-btn .report-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.report-type-btn:hover {
+  background: rgba(0, 242, 254, 0.1);
+  border-color: rgba(0, 242, 254, 0.4);
+}
+
+.report-type-btn.active {
+  background: rgba(0, 242, 254, 0.18);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 16px rgba(0, 242, 254, 0.35);
+  transform: translateY(-2px);
+}
+
+.report-speed-section {
+  margin-bottom: 18px;
+}
+
+.report-speed-section label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.speed-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.speed-opt-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.speed-opt-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.speed-opt-btn.active {
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  color: #000;
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+}
+
+.report-status-msg {
+  font-size: 12px;
+  text-align: center;
+  min-height: 18px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.btn-submit-report {
+  width: 100%;
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  border: none;
+  border-radius: 12px;
+  color: #050b14;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 18px rgba(0, 242, 254, 0.35);
+  transition: all 0.2s;
+}
+
+.btn-submit-report:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0, 242, 254, 0.5);
+}
+
+.btn-submit-report:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

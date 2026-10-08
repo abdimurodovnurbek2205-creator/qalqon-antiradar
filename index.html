@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>QALQON ANTIRADAR - Professional Yo'l Himoyasi</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#070a10">
+</head>
+<body>
+
+  <!-- Asosiy Tepasi (Header) -->
+  <header>
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#000">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <h1>QALQON RADAR</h1>
+        <span>O'ZBEKISTON YO'LLARI</span>
+      </div>
+    </div>
+
+    <!-- GPS Jonli Holat Ko'rsatkichi -->
+    <div id="gps-status-badge" class="gps-live-indicator">
+      <span class="gps-dot"></span>
+      <span id="gps-status-text">GPS: Ulanmoqda...</span>
+    </div>
+
+    <!-- Tezkor tugmalar -->
+    <div class="header-actions">
+      <button id="btn-report-cam" class="btn-icon" style="background: rgba(255, 68, 68, 0.2); border-color: rgba(255, 68, 68, 0.5); color: #ff5555;" title="Yangi radar yoki patrulni belgilash">
+        <span>⚠️</span> Belgilash
+      </button>
+      <button id="btn-layer" class="btn-icon" title="Xarita turini o'zgartirish (Google / OSM / Satellite)">
+        <span>🗺️</span> Xarita
+      </button>
+      <button id="btn-recenter" class="btn-icon active-glow" title="Mening joylashuvimga qaratish">
+        <span>📍</span> Joylashuvim
+      </button>
+      <button id="btn-hud" class="btn-icon" title="Tungi HUD Rejimi (Old oynaga akslantirish)">
+        <span>🌙</span> HUD
+      </button>
+      <button id="btn-mute" class="btn-icon" title="Ovozli ogohlantirish">
+        <span>🔊</span> Ovozli
+      </button>
+      <button id="btn-settings-toggle" class="btn-icon" title="Sozlamalar">
+        <span>⚙️</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Sozlamalar va Diagnostika Paneli (Yashirin Drawer) -->
+  <div id="settings-drawer" class="settings-drawer hidden">
+    <div class="settings-header">
+      <h3>⚙️ Radar Sozlamalari</h3>
+      <button id="btn-close-settings" class="btn-close">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="setting-item">
+        <label>Xarita qatlami</label>
+        <select id="setting-map-layer">
+          <option value="google" selected>Google Yo'llar (Tezkor va aniq)</option>
+          <option value="osm">OpenStreetMap (Klassik)</option>
+          <option value="hybrid">Google Sun'iy yo'ldosh (Gibrid)</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label>Ogohlantirish masofasi</label>
+        <select id="setting-distance-mode">
+          <option value="auto" selected>Avtomatik (Tezlikka qarab: 350m - 850m)</option>
+          <option value="far">Uzoq masofa (800m - 1200m)</option>
+          <option value="near">Shahar rejimi (350m - 500m)</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label>Geiger ovozi (Chiqillash)</label>
+        <select id="setting-geiger-mode">
+          <option value="on" selected>Yoqilgan (Neoline X-COP uslubida)</option>
+          <option value="off">Faqat ovozli xabar</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label>Ovoz balandligi</label>
+        <input type="range" id="setting-volume-slider" min="0" max="100" value="100">
+      </div>
+      <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+        <label>Tizim tekshiruvi</label>
+        <button id="btn-sound-test" class="sim-btn" style="width:100%; justify-content:center; border-color:var(--accent-cyan); color:var(--accent-cyan);">
+          <span>⚡</span> Ovozni sinab ko'rish
+        </button>
+      </div>
+      <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;">
+        <label>☁️ Supabase Cloud Baza</label>
+        <div id="cloud-status-badge" style="font-size:12px; margin-bottom:8px; color:#ffb84d; font-weight:600;">
+          🟡 Offline kesh (58 ta radar)
+        </div>
+        <input type="text" id="setting-supabase-url" placeholder="Supabase URL (https://xyz.supabase.co)" style="width:100%; margin-bottom:6px; padding:7px; background:#121620; border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:6px; font-size:11px; box-sizing:border-box;">
+        <input type="password" id="setting-supabase-key" placeholder="Supabase Anon Key" style="width:100%; margin-bottom:8px; padding:7px; background:#121620; border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:6px; font-size:11px; box-sizing:border-box;">
+        <div style="display:flex; gap:6px;">
+          <button id="btn-save-cloud" class="sim-btn" style="flex:1; justify-content:center; border-color:var(--accent-cyan); color:var(--accent-cyan); font-size:11px; padding:6px 4px;">
+            💾 Saqlash
+          </button>
+          <button id="btn-sync-cloud" class="sim-btn" style="flex:1; justify-content:center; border-color:#00ff66; color:#00ff66; font-size:11px; padding:6px 4px;">
+            🔄 Sinxronlash
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Asosiy Real Haydash Maydoni -->
+  <main class="main-workspace">
+    
+    <!-- Real Vaqt Xaritasi (Google / OSM) -->
+    <div class="map-container">
+      <div id="map"></div>
+
+      <!-- KOKPIT HUD & SPIDOMETR WIDGETI (Xarita ustida suzib turuvchi) -->
+      <div class="driver-hud-overlay">
+        
+        <!-- Yuqori qator: Spidometr, Cheklov, Azimut -->
+        <div id="speed-cluster" class="speed-cluster-hud">
+          <div class="speed-box">
+            <span id="speed-val" class="speed-num">0</span>
+            <span class="speed-unit">KM/H</span>
+          </div>
+
+          <!-- Tezlik chegarasi belgisi -->
+          <div class="limit-sign-box">
+            <div id="speed-limit-sign" class="limit-sign">60</div>
+            <span class="limit-lbl">CHEKLOV</span>
+          </div>
+
+          <!-- Yo'nalish va Jarima holati -->
+          <div class="status-box">
+            <div id="fine-status-badge" class="fine-pill">XAVFSIZ</div>
+            <div id="heading-bearing-text" class="bearing-info">YO'NALISH: --°</div>
+          </div>
+        </div>
+
+        <!-- Faol Kamera Ogohlantirish Kartasi (Radarga yaqinlashganda avtomatik chiqadi) -->
+        <div id="active-alert-box" class="active-warning-card">
+          <div class="warning-head">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span id="alert-cam-icon" class="cam-icon-tag">🦅</span>
+              <div class="cam-title-box">
+                <h3 id="alert-cam-title">Yo'l ochiq</h3>
+                <p id="alert-cam-road">Oldinda kameralar yo'q</p>
+              </div>
+            </div>
+            <div id="alert-cam-dist" class="countdown-dist">-- m</div>
+          </div>
+
+          <div class="countdown-progress-bar">
+            <div id="alert-progress-fill" class="countdown-progress-fill"></div>
+          </div>
+
+          <div id="alert-speech-text" class="warning-voice-msg">
+            Xavfsiz harakatlaning
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pastki o'ngdagi Oldindagi Kameralar Vidjeti (Suzuvchi mini-ro'yxat) -->
+      <div class="upcoming-floating-card">
+        <div class="upcoming-title">
+          <span>📋 Oldindagi Radarlar</span>
+          <span id="nearby-cams-count" style="color:var(--accent-cyan); font-size:11px;">0 ta</span>
+        </div>
+        <div id="upcoming-list" class="upcoming-mini-list">
+          <!-- JS orqali to'ldiriladi -->
+        </div>
+      </div>
+
+      <!-- Audio Faollashtirish Qalqoni (Avtomatik yoqiladi) -->
+      <div id="audio-unlock-overlay" class="audio-prompt-pill">
+        <span>🔊</span> Ovozli ogohlantirish tayyor. Ekranni bir marta bosing.
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Pastki Panel: Jonli Xarita Rejimi va Lokatsiya Manzili -->
+  <footer class="bottom-panel">
+    <div class="sim-controls">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:13px; font-weight:800; color:#fff;">📍 JONLI LOKATSIYA:</span>
+        <span id="user-coords-text" style="font-size:13px; color:var(--accent-cyan); font-weight:700;">Lokatsiya aniqlanmoqda...</span>
+      </div>
+
+      <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+        <button id="btn-test-drive" class="sim-btn" style="border-color:var(--accent-cyan); color:var(--accent-cyan);" title="Harakatni yo'lda sinash">
+          <span>🚗</span> Yo'lda sinash
+        </button>
+        <button id="btn-follow-toggle" class="sim-btn active">
+          <span>🧭</span> Avto-kuzatuv: Yoqiq
+        </button>
+        <button id="btn-fullscreen" class="sim-btn">
+          <span>⛶</span> To'liq Ekran
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Tungi HUD Ekran (Kechasi ko'zni charchatmaydigan qora kokpit) -->
+  <div id="hud-screen-box" class="hud-screen">
+    
+    <!-- HUD Yuqori Boshqaruv Qatori -->
+    <div class="hud-top-bar">
+      <div class="hud-title-tag">
+        <span>🌙 TUNGI KOKPIT SPIDOMETR</span>
+      </div>
+      <div class="hud-actions-bar">
+        <button id="btn-hud-mirror" class="hud-ctrl-btn" title="Old oynaga yotqizib akslantirish uchun">
+          <span>🪞</span> Ko'zgu: O'chiq
+        </button>
+        <button id="btn-hud-exit" class="hud-ctrl-btn exit-btn" title="Xaritaga qaytish">
+          <span>✕</span> Chiqish
+        </button>
+      </div>
+    </div>
+
+    <!-- HUD Markaziy Spidometr va Radar Maydoni -->
+    <div id="hud-content-container" class="hud-content-center">
+      <div class="hud-speed-wrapper">
+        <div id="hud-speed-val" class="hud-speed">0</div>
+        <div class="hud-speed-unit">KM/H</div>
+      </div>
+
+      <div id="hud-alert-box" class="hud-alert-box">
+        <div class="hud-cam-limit">
+          <span id="hud-limit-val">60</span>
+        </div>
+        <div class="hud-dist-info">
+          <div id="hud-dist-val" class="hud-cam-dist">-- m</div>
+          <div id="hud-road-val" class="hud-cam-road">Yo'l ochiq</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pastki Tushuntirish Ko'rsatmasi -->
+    <div class="hud-bottom-tip">
+      💡 <b>To'g'ridan-to'g'ri qarash</b> uchun shunday qoldiring.<br>
+      Agar telefonni mashina old oynasiga yotqizib, <b>oynadagi aksiga qaramoqchi bo'lsangiz</b> — <b>«🪞 Ko'zgu»</b> tugmasini bosing.
+    </div>
+
+  <!-- Haydovchi Radar Belgilash Modali -->
+  <div id="report-modal" class="report-modal-overlay hidden">
+    <div class="report-modal-box">
+      <div class="report-modal-header">
+        <h3>⚠️ Radar / Patrulni Belgilash</h3>
+        <button id="btn-close-report" class="btn-close">✕</button>
+      </div>
+      <p class="report-subtitle">Hozirgi joylashuvingiz bo'yicha barcha haydovchilarni ogohlantiring:</p>
+      
+      <div class="report-grid">
+        <button class="report-type-btn active" data-type="uch_oyoq">
+          <span class="report-icon">🔺</span>
+          <span class="report-label">Uch oyoq</span>
+        </button>
+        <button class="report-type-btn" data-type="patrul_360">
+          <span class="report-icon">🚔</span>
+          <span class="report-label">Patrul 360</span>
+        </button>
+        <button class="report-type-btn" data-type="rear">
+          <span class="report-icon">📸</span>
+          <span class="report-label">Orqadan</span>
+        </button>
+        <button class="report-type-btn" data-type="lochin">
+          <span class="report-icon">🦅</span>
+          <span class="report-label">Lochin</span>
+        </button>
+        <button class="report-type-btn" data-type="traffic_light">
+          <span class="report-icon">🚦</span>
+          <span class="report-label">Chorraha</span>
+        </button>
+      </div>
+
+      <div class="report-speed-section">
+        <label>Tezlik chegarasi:</label>
+        <div class="speed-selector">
+          <button class="speed-opt-btn" data-speed="50">50</button>
+          <button class="speed-opt-btn active" data-speed="60">60</button>
+          <button class="speed-opt-btn" data-speed="70">70</button>
+          <button class="speed-opt-btn" data-speed="80">80</button>
+          <button class="speed-opt-btn" data-speed="100">100</button>
+        </div>
+      </div>
+
+      <div id="report-status-msg" class="report-status-msg"></div>
+
+      <button id="btn-submit-report" class="btn-submit-report">
+        <span>📍</span> Shu yerda belgilash
+      </button>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <!-- Supabase JS SDK & Cloud Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="src/supabaseClient.js"></script>
+  <!-- Application JS -->
+  <script src="app.js"></script>
+</body>
+</html>
