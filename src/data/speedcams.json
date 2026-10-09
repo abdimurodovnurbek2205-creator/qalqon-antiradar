@@ -1681,5 +1681,126 @@
     "azimuth": -1,
     "roadName": "Mo'ynoq Orol dengizi magistrali",
     "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-ter-004",
+    "name": "Lochin 60 - I. Karimov shoh ko'chasi (Hokimiyat oldi)",
+    "lat": 37.2285,
+    "lng": 67.275,
+    "type": "lochin",
+    "speedLimit": 60,
+    "azimuth": -1,
+    "roadName": "Islom Karimov shoh ko'chasi",
+    "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-ter-005",
+    "name": "Chorraha kamerasi - At-Termiziy va A. Navoiy",
+    "lat": 37.231,
+    "lng": 67.282,
+    "type": "traffic_light",
+    "speedLimit": 60,
+    "azimuth": -1,
+    "roadName": "Termiz markaziy chorrahasi",
+    "distanceAlertThreshold": 450
+  },
+  {
+    "id": "uz-sur-ter-006",
+    "name": "Lochin 50 - Barkamol Avlod ko'chasi (TerDU oldi)",
+    "lat": 37.239,
+    "lng": 67.271,
+    "type": "lochin",
+    "speedLimit": 50,
+    "azimuth": -1,
+    "roadName": "TerDU Universitet shaharchasi",
+    "distanceAlertThreshold": 450
+  },
+  {
+    "id": "uz-sur-ter-007",
+    "name": "Lochin 50 - Ibn Sino ko'chasi (Viloyat shifoxonasi)",
+    "lat": 37.221,
+    "lng": 67.265,
+    "type": "lochin",
+    "speedLimit": 50,
+    "azimuth": -1,
+    "roadName": "Ibn Sino ko'chasi",
+    "distanceAlertThreshold": 450
+  },
+  {
+    "id": "uz-sur-ter-008",
+    "name": "Lochin 60 - Hakim at-Termiziy ziyoratgoh yo'li",
+    "lat": 37.265,
+    "lng": 67.215,
+    "type": "lochin",
+    "speedLimit": 60,
+    "azimuth": -1,
+    "roadName": "Hakim at-Termiziy majmuasi yo'li",
+    "distanceAlertThreshold": 550
+  },
+  {
+    "id": "uz-sur-ter-009",
+    "name": "Chorraha kamerasi - Yashil Bozor maydoni",
+    "lat": 37.224,
+    "lng": 67.286,
+    "type": "traffic_light",
+    "speedLimit": 60,
+    "azimuth": -1,
+    "roadName": "Markaziy bozor chorrahasi",
+    "distanceAlertThreshold": 450
+  },
+  {
+    "id": "uz-sur-ter-010",
+    "name": "Lochin 70 - Termiz Aeroporti trassasi",
+    "lat": 37.282,
+    "lng": 67.308,
+    "type": "lochin",
+    "speedLimit": 70,
+    "azimuth": -1,
+    "roadName": "Xalqaro aeroport yo'li",
+    "distanceAlertThreshold": 650
+  },
+  {
+    "id": "uz-sur-ter-011",
+    "name": "Kamera orqadan oladi! - At-Termiziy ko'chasi",
+    "lat": 37.238,
+    "lng": 67.279,
+    "type": "rear",
+    "speedLimit": 60,
+    "azimuth": -1,
+    "roadName": "At-Termiziy ko'chasi (Orqadan uradi)",
+    "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-ter-012",
+    "name": "Lochin 60 - Alisher Navoiy ko'chasi (San'at saroyi)",
+    "lat": 37.234,
+    "lng": 67.289,
+    "type": "lochin",
+    "speedLimit": 60,
+    "azimuth": -1,
+    "roadName": "A. Navoiy ko'chasi",
+    "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-ter-013",
+    "name": "YPX Patrul 360 - Termiz Vokzal maydoni",
+    "lat": 37.242,
+    "lng": 67.295,
+    "type": "patrul_360",
+    "speedLimit": 60,
+    "azimuth": -1,
+    "roadName": "Temiryo'l vokzali aylanmasi",
+    "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-ter-014",
+    "name": "Lochin 70 - M39 Termiz Janubiy aylanma yo'li",
+    "lat": 37.205,
+    "lng": 67.29,
+    "type": "lochin",
+    "speedLimit": 70,
+    "azimuth": -1,
+    "roadName": "M39 Janubiy halqa yo'li",
+    "distanceAlertThreshold": 650
   }
 ]

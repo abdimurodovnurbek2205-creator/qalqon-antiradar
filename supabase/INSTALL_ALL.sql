@@ -53,7 +53,7 @@ CREATE POLICY "Public insert community_reports" ON public.community_reports
     FOR INSERT WITH CHECK (true);
 
 
--- 3. Barcha Ozbekiston tumanlari va trassalarini yuklash
+-- 3. Barcha 164 ta radarlar
 -- ============================================================
 -- QALQON ANTIRADAR - O'ZBEKISTON RADARLAR BAZASI (58 TA KAMERA)
 -- Ushbu kodni Supabase SQL Editorga tashlab 'RUN' bosing
@@ -213,7 +213,18 @@ VALUES
   ('uz-qr-qon-001', 'Lochin 70 - Qo''ng''irot Ustyurt Qozog''iston trassasi', 43.045, 58.845, 'lochin', 70, -1, 'A380 Beyneu xalqaro yo''li', 750, TRUE),
   ('uz-qr-amu-001', 'Lochin 60 - Amudaryo (Mang''it) markazi', 42.115, 60.055, 'lochin', 60, -1, 'Mang''it shahar magistrali', 500, TRUE),
   ('uz-qr-chi-001', 'Lochin 60 - Chimboy shahar markazi', 42.945, 59.775, 'lochin', 60, -1, 'Chimboy markaziy yo''li', 500, TRUE),
-  ('uz-qr-moy-001', 'Lochin 60 - Mo''ynoq kemalar qabristoni yo''li', 43.765, 59.025, 'lochin', 60, -1, 'Mo''ynoq Orol dengizi magistrali', 500, TRUE)
+  ('uz-qr-moy-001', 'Lochin 60 - Mo''ynoq kemalar qabristoni yo''li', 43.765, 59.025, 'lochin', 60, -1, 'Mo''ynoq Orol dengizi magistrali', 500, TRUE),
+  ('uz-sur-ter-004', 'Lochin 60 - I. Karimov shoh ko''chasi (Hokimiyat oldi)', 37.2285, 67.275, 'lochin', 60, -1, 'Islom Karimov shoh ko''chasi', 500, TRUE),
+  ('uz-sur-ter-005', 'Chorraha kamerasi - At-Termiziy va A. Navoiy', 37.231, 67.282, 'traffic_light', 60, -1, 'Termiz markaziy chorrahasi', 450, TRUE),
+  ('uz-sur-ter-006', 'Lochin 50 - Barkamol Avlod ko''chasi (TerDU oldi)', 37.239, 67.271, 'lochin', 50, -1, 'TerDU Universitet shaharchasi', 450, TRUE),
+  ('uz-sur-ter-007', 'Lochin 50 - Ibn Sino ko''chasi (Viloyat shifoxonasi)', 37.221, 67.265, 'lochin', 50, -1, 'Ibn Sino ko''chasi', 450, TRUE),
+  ('uz-sur-ter-008', 'Lochin 60 - Hakim at-Termiziy ziyoratgoh yo''li', 37.265, 67.215, 'lochin', 60, -1, 'Hakim at-Termiziy majmuasi yo''li', 550, TRUE),
+  ('uz-sur-ter-009', 'Chorraha kamerasi - Yashil Bozor maydoni', 37.224, 67.286, 'traffic_light', 60, -1, 'Markaziy bozor chorrahasi', 450, TRUE),
+  ('uz-sur-ter-010', 'Lochin 70 - Termiz Aeroporti trassasi', 37.282, 67.308, 'lochin', 70, -1, 'Xalqaro aeroport yo''li', 650, TRUE),
+  ('uz-sur-ter-011', 'Kamera orqadan oladi! - At-Termiziy ko''chasi', 37.238, 67.279, 'rear', 60, -1, 'At-Termiziy ko''chasi (Orqadan uradi)', 500, TRUE),
+  ('uz-sur-ter-012', 'Lochin 60 - Alisher Navoiy ko''chasi (San''at saroyi)', 37.234, 67.289, 'lochin', 60, -1, 'A. Navoiy ko''chasi', 500, TRUE),
+  ('uz-sur-ter-013', 'YPX Patrul 360 - Termiz Vokzal maydoni', 37.242, 67.295, 'patrul_360', 60, -1, 'Temiryo''l vokzali aylanmasi', 500, TRUE),
+  ('uz-sur-ter-014', 'Lochin 70 - M39 Termiz Janubiy aylanma yo''li', 37.205, 67.29, 'lochin', 70, -1, 'M39 Janubiy halqa yo''li', 650, TRUE)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   lat = EXCLUDED.lat,
