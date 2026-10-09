@@ -1171,27 +1171,21 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!cloudLoaded) {
-      // Offline kesh yoki lokal speedcams.json
-      const cached = window.QalqonCloud ? window.QalqonCloud.getCached() : null;
-      if (cached && cached.length > 0) {
-        speedCameras = cached;
-        engine.cameras = cached;
-        renderCamerasOnMap();
-        updateNearbyCamsList();
-        updateCloudUI(false, cached.length);
-      } else {
-        fetch('src/data/speedcams.json')
-          .then(r => r.json())
-          .then(data => {
-            if (Array.isArray(data) && data.length > 0) {
-              speedCameras = data;
-              engine.cameras = data;
-              renderCamerasOnMap();
-              updateNearbyCamsList();
-              updateCloudUI(false, data.length);
-            }
-          }).catch(() => {});
-      }
+      // Barcha 826 ta mahalliy va viloyatlar radarlarini to'g'ridan-to'g'ri speedcams.json dan yuklash
+      fetch('src/data/speedcams.json')
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            speedCameras = data;
+            engine.cameras = data;
+            renderCamerasOnMap();
+            updateNearbyCamsList();
+            updateCloudUI(false, data.length);
+            console.log(`✅ Lokal bazadan ${data.length} ta radar yuklandi!`);
+          }
+        }).catch(err => {
+          console.warn('speedcams.json yuklashda xatolik:', err);
+        });
     }
   }
 
