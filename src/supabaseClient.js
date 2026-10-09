@@ -9,7 +9,8 @@ const LOCAL_CAMERAS_CACHE_KEY = 'qalqon_cached_cameras';
 const PENDING_REPORTS_KEY = 'qalqon_pending_reports';
 
 // Standart konfiguratsiya (Settings orqali o'zgartirish mumkin)
-let currentSupabaseUrl = localStorage.getItem(SUPABASE_STORAGE_KEY_URL) || '';
+const DEFAULT_SUPABASE_URL = 'https://khfpsjlelicajcycjrag.supabase.co';
+let currentSupabaseUrl = localStorage.getItem(SUPABASE_STORAGE_KEY_URL) || DEFAULT_SUPABASE_URL;
 let currentSupabaseKey = localStorage.getItem(SUPABASE_STORAGE_KEY_KEY) || '';
 
 let supabaseClient = null;
