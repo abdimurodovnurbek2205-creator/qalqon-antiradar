@@ -62,7 +62,17 @@ VALUES
   ('uz-bux-007', 'Lochin 60 - Galaosiyo shahar kirish yo''li', 39.855, 64.442, 'lochin', 60, 135, 'Galaosiyo shoh ko''chasi', 550, TRUE),
   ('uz-bux-008', 'Kamera orqadan oladi! 60 - Buxoro Galaosiyo', 39.835, 64.425, 'rear', 60, 180, 'Buxoro shahar kirish yo''li (Orqadan uradi)', 500, TRUE),
   ('uz-bux-009', 'YPX Patrul 360 - Buxoro aylanmasi', 39.87, 64.405, 'patrul_360', 70, 220, 'M37 Galaosiyo chorrahasi', 600, TRUE),
-  ('uz-bux-010', 'Chorraha kamerasi - Vobkent aylanmasi', 39.925, 64.515, 'traffic_light', 60, 45, 'M37 Vobkent chorrahasi', 450, TRUE)
+  ('uz-bux-010', 'Chorraha kamerasi - Vobkent aylanmasi', 39.925, 64.515, 'traffic_light', 60, 45, 'M37 Vobkent chorrahasi', 450, TRUE),
+  ('uz-sur-ban-001', 'Lochin 60 - Bandixon markaziy ko''chasi', 37.8608, 67.3883, 'lochin', 60, 90, 'Mustaqillik shoh ko''chasi (Bandixon markazi)', 500, TRUE),
+  ('uz-sur-ban-002', 'Ko''chma Uch oyoq 70 - Bandixon - Boysun trassasi (4R100)', 37.885, 67.372, 'uch_oyoq', 70, 320, '4R100 Bandixon - Boysun trassasi (Pistirma)', 650, TRUE),
+  ('uz-sur-ban-003', 'Lochin 70 - Bandixon - Qiziriq yo''nalishi', 37.832, 67.398, 'lochin', 70, 180, '4R100 Qiziriq yo''nalishi', 600, TRUE),
+  ('uz-sur-ban-004', 'Chorraha kamerasi - Bandixon markaziy chorraha', 37.8625, 67.3855, 'traffic_light', 60, 45, 'Bandixon markazi chorrahasi', 450, TRUE),
+  ('uz-sur-ban-005', 'YPX Patrul 360 - Bandixon kirish aylanmasi', 37.848, 67.391, 'patrul_360', 60, 10, 'Bandixon tumaniga kirish yo''li', 500, TRUE),
+  ('uz-sur-ban-006', 'Kamera orqadan oladi! - Bandixon - Jarqo''rg''on yo''li', 37.855, 67.412, 'rear', 60, 110, '4R105 Jarqo''rg''on yo''li (Orqadan uradi)', 500, TRUE),
+  ('uz-sur-boy-001', 'Lochin 70 - Boysun kirish posti', 38.205, 67.205, 'lochin', 70, 15, 'M39 Darband - Boysun yo''li', 650, TRUE),
+  ('uz-sur-den-001', 'Lochin 60 - Denov Sh. Rashidov ko''chasi', 38.275, 67.895, 'lochin', 60, 80, 'Denov shahar markazi', 500, TRUE),
+  ('uz-sur-kum-001', 'Lochin 70 - Qumqo''rg''on trassasi (M41)', 37.815, 67.585, 'lochin', 70, 40, 'M41 Termiz - Denov yo''li (Qumqo''rg''on)', 650, TRUE),
+  ('uz-sur-jar-001', 'Lochin 70 - Jarqo''rg''on kirish trassasi', 37.505, 67.415, 'lochin', 70, 350, 'M41 Jarqo''rg''on aylanma yo''li', 650, TRUE)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   lat = EXCLUDED.lat,

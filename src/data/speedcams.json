@@ -636,5 +636,115 @@
     "azimuth": 45,
     "roadName": "M37 Vobkent chorrahasi",
     "distanceAlertThreshold": 450
+  },
+  {
+    "id": "uz-sur-ban-001",
+    "name": "Lochin 60 - Bandixon markaziy ko'chasi",
+    "lat": 37.8608,
+    "lng": 67.3883,
+    "type": "lochin",
+    "speedLimit": 60,
+    "azimuth": 90,
+    "roadName": "Mustaqillik shoh ko'chasi (Bandixon markazi)",
+    "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-ban-002",
+    "name": "Ko'chma Uch oyoq 70 - Bandixon - Boysun trassasi (4R100)",
+    "lat": 37.885,
+    "lng": 67.372,
+    "type": "uch_oyoq",
+    "speedLimit": 70,
+    "azimuth": 320,
+    "roadName": "4R100 Bandixon - Boysun trassasi (Pistirma)",
+    "distanceAlertThreshold": 650
+  },
+  {
+    "id": "uz-sur-ban-003",
+    "name": "Lochin 70 - Bandixon - Qiziriq yo'nalishi",
+    "lat": 37.832,
+    "lng": 67.398,
+    "type": "lochin",
+    "speedLimit": 70,
+    "azimuth": 180,
+    "roadName": "4R100 Qiziriq yo'nalishi",
+    "distanceAlertThreshold": 600
+  },
+  {
+    "id": "uz-sur-ban-004",
+    "name": "Chorraha kamerasi - Bandixon markaziy chorraha",
+    "lat": 37.8625,
+    "lng": 67.3855,
+    "type": "traffic_light",
+    "speedLimit": 60,
+    "azimuth": 45,
+    "roadName": "Bandixon markazi chorrahasi",
+    "distanceAlertThreshold": 450
+  },
+  {
+    "id": "uz-sur-ban-005",
+    "name": "YPX Patrul 360 - Bandixon kirish aylanmasi",
+    "lat": 37.848,
+    "lng": 67.391,
+    "type": "patrul_360",
+    "speedLimit": 60,
+    "azimuth": 10,
+    "roadName": "Bandixon tumaniga kirish yo'li",
+    "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-ban-006",
+    "name": "Kamera orqadan oladi! - Bandixon - Jarqo'rg'on yo'li",
+    "lat": 37.855,
+    "lng": 67.412,
+    "type": "rear",
+    "speedLimit": 60,
+    "azimuth": 110,
+    "roadName": "4R105 Jarqo'rg'on yo'li (Orqadan uradi)",
+    "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-boy-001",
+    "name": "Lochin 70 - Boysun kirish posti",
+    "lat": 38.205,
+    "lng": 67.205,
+    "type": "lochin",
+    "speedLimit": 70,
+    "azimuth": 15,
+    "roadName": "M39 Darband - Boysun yo'li",
+    "distanceAlertThreshold": 650
+  },
+  {
+    "id": "uz-sur-den-001",
+    "name": "Lochin 60 - Denov Sh. Rashidov ko'chasi",
+    "lat": 38.275,
+    "lng": 67.895,
+    "type": "lochin",
+    "speedLimit": 60,
+    "azimuth": 80,
+    "roadName": "Denov shahar markazi",
+    "distanceAlertThreshold": 500
+  },
+  {
+    "id": "uz-sur-kum-001",
+    "name": "Lochin 70 - Qumqo'rg'on trassasi (M41)",
+    "lat": 37.815,
+    "lng": 67.585,
+    "type": "lochin",
+    "speedLimit": 70,
+    "azimuth": 40,
+    "roadName": "M41 Termiz - Denov yo'li (Qumqo'rg'on)",
+    "distanceAlertThreshold": 650
+  },
+  {
+    "id": "uz-sur-jar-001",
+    "name": "Lochin 70 - Jarqo'rg'on kirish trassasi",
+    "lat": 37.505,
+    "lng": 67.415,
+    "type": "lochin",
+    "speedLimit": 70,
+    "azimuth": 350,
+    "roadName": "M41 Jarqo'rg'on aylanma yo'li",
+    "distanceAlertThreshold": 650
   }
 ]
