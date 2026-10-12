@@ -1221,25 +1221,8 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // SUPABASE CLOUD VA RADARLAR BAZASINI YUKLASH
+  // RADARLAR BAZASINI AVTOMATIK YUKLASH (CLOUD & LOKAL KESH)
   // ============================================================
-  const cloudBadge = document.getElementById('cloud-status-badge');
-  const inputCloudUrl = document.getElementById('setting-supabase-url');
-  const inputCloudKey = document.getElementById('setting-supabase-key');
-  const btnSaveCloud = document.getElementById('btn-save-cloud');
-  const btnSyncCloud = document.getElementById('btn-sync-cloud');
-
-  function updateCloudUI(isConnected, count) {
-    if (!cloudBadge) return;
-    if (isConnected) {
-      cloudBadge.style.color = '#00ff66';
-      cloudBadge.innerText = `🟢 Cloud faol (${count} ta radar)`;
-    } else {
-      cloudBadge.style.color = '#ffb84d';
-      cloudBadge.innerText = `🟡 Offline kesh (${count || speedCameras.length} ta radar)`;
-    }
-  }
-
   async function loadCameras() {
     let cloudLoaded = false;
     if (window.QalqonCloud && window.QalqonCloud.isConfigured()) {
@@ -1250,7 +1233,6 @@ window.addEventListener('DOMContentLoaded', () => {
           engine.cameras = cloudCams;
           renderCamerasOnMap();
           updateNearbyCamsList();
-          updateCloudUI(true, cloudCams.length);
           cloudLoaded = true;
           console.log(`✅ Supabase Cloud-dan ${cloudCams.length} ta radar yuklandi!`);
         }
@@ -1260,7 +1242,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!cloudLoaded) {
-      // Barcha 826 ta mahalliy va viloyatlar radarlarini to'g'ridan-to'g'ri speedcams.json dan yuklash
+      // Oflayn yoki lokal bazadan 1,014 ta radarni yuklash
       fetch('src/data/speedcams.json')
         .then(r => r.json())
         .then(data => {
@@ -1269,7 +1251,6 @@ window.addEventListener('DOMContentLoaded', () => {
             engine.cameras = data;
             renderCamerasOnMap();
             updateNearbyCamsList();
-            updateCloudUI(false, data.length);
             console.log(`✅ Lokal bazadan ${data.length} ta radar yuklandi!`);
           }
         }).catch(err => {
@@ -1278,10 +1259,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Sahifa ochilganda yuklash
+  // Sahifa ochilganda bazani avtomatik yuklash
   loadCameras();
 
-  // Supabase Real-time: boshqa haydovchilar belgilagan radarlarni jonli qabul qilish
+  // Jonli sinxronizatsiya: boshqa haydovchilar belgilagan radarlarni qabul qilish
   if (window.QalqonCloud) {
     window.QalqonCloud.subscribe((newCam) => {
       const exists = speedCameras.find(c => c.id === newCam.id);
@@ -1299,45 +1280,6 @@ window.addEventListener('DOMContentLoaded', () => {
           setTimeout(() => audio.playFile('patrul_360.mp3'), 400);
         }
       }
-    });
-
-    const cfg = window.QalqonCloud.getConfig();
-    if (inputCloudUrl && cfg.url) inputCloudUrl.value = cfg.url;
-    if (inputCloudKey && cfg.key) inputCloudKey.value = cfg.key;
-  }
-
-  // Cloud sozlamalarini saqlash
-  if (btnSaveCloud) {
-    btnSaveCloud.addEventListener('click', async () => {
-      const url = (inputCloudUrl.value || '').trim();
-      const key = (inputCloudKey.value || '').trim();
-      btnSaveCloud.disabled = true;
-      btnSaveCloud.innerText = '⏳ Tekshirilmoqda...';
-
-      const ok = window.QalqonCloud.configure(url, key);
-      if (ok) {
-        btnSaveCloud.innerText = '✅ Ulandi!';
-        await loadCameras();
-      } else {
-        btnSaveCloud.innerText = '❌ Ulanmadi';
-      }
-      setTimeout(() => {
-        btnSaveCloud.disabled = false;
-        btnSaveCloud.innerText = '💾 Saqlash';
-      }, 2000);
-    });
-  }
-
-  if (btnSyncCloud) {
-    btnSyncCloud.addEventListener('click', async () => {
-      btnSyncCloud.disabled = true;
-      btnSyncCloud.innerText = '⏳ Sinxronlanmoqda...';
-      await loadCameras();
-      btnSyncCloud.innerText = '✅ Yangilandi!';
-      setTimeout(() => {
-        btnSyncCloud.disabled = false;
-        btnSyncCloud.innerText = '🔄 Sinxronlash';
-      }, 2000);
     });
   }
 
