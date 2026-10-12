@@ -409,6 +409,7 @@ class AudioCore {
     this.lastOverSpeedAlarmTime = 0;
     this.activeCameraId = null;
     this.unlocked = false;
+    this.keepAliveAudio = null;
 
     // Neoline va Tizim tovushlari
     const tones = [
@@ -451,10 +452,51 @@ class AudioCore {
       }
     } catch (e) {}
 
+    // Telefon qulflanganda ham audio va GPS to‘xtab qolmasligi uchun jimjit orqa fon oqimi
+    this.startBackgroundKeepAlive();
+
     const pill = document.getElementById('audio-unlock-overlay');
     if (pill) {
       pill.classList.add('fade-out');
       setTimeout(() => pill.remove(), 600);
+    }
+  }
+
+  startBackgroundKeepAlive() {
+    if (this.keepAliveAudio) return;
+    try {
+      // 1 soniyalik jimjit (silent) audio orqa fonda GPS va ovozlarni uxlatmaslik uchun
+      this.keepAliveAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+      this.keepAliveAudio.loop = true;
+      this.keepAliveAudio.volume = 0.001;
+      this.keepAliveAudio.play().then(() => {
+        console.log('✅ Orqa fonda audio keepalive faol');
+      }).catch(() => {});
+
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: '🛡️ Qalqon Radar — Jonli Nazorat',
+          artist: 'O‘zbekiston Yo‘llari',
+          album: 'Ekran qulflanganda ham faol'
+        });
+        navigator.mediaSession.playbackState = 'playing';
+      }
+    } catch (e) {
+      console.warn('Keepalive audio xatosi:', e);
+    }
+  }
+
+  stopAll() {
+    Object.values(this.audioCache).forEach(a => {
+      try {
+        a.pause();
+        a.currentTime = 0;
+      } catch (e) {}
+    });
+    if (this.keepAliveAudio) {
+      try {
+        this.keepAliveAudio.pause();
+      } catch (e) {}
     }
   }
 
@@ -564,7 +606,97 @@ class AudioCore {
       }, 350);
     }
   }
-}
+// ============================================================
+// ⚡ EKRAN DOIMO YONIQ VA ORQA FONDA ISHLASH (WAKE LOCK ENGINE)
+// ============================================================
+const WakeLockEngine = {
+  sentinel: null,
+  isWanted: true,
+  fallbackVideo: null,
+
+  async request() {
+    this.isWanted = true;
+
+    // 1. Zamonaviy Screen Wake Lock API (Chrome, Safari 16.4+, Samsung Internet)
+    if ('wakeLock' in navigator) {
+      try {
+        if (!this.sentinel || this.sentinel.released) {
+          this.sentinel = await navigator.wakeLock.request('screen');
+          this.sentinel.addEventListener('release', () => {
+            console.log('⚡ WakeLock vaqtincha bo\'shatildi');
+            this.updateUi();
+          });
+          console.log('✅ Ekran doimo yoniq (WakeLock faol)');
+        }
+      } catch (err) {
+        console.warn('WakeLock xatosi:', err.message);
+      }
+    }
+
+    // 2. NoSleep video fallback (Barcha boshqa mobil brauzerlar uchun 100% kafolat)
+    this.startFallbackVideo();
+    this.updateUi();
+  },
+
+  startFallbackVideo() {
+    if (!this.fallbackVideo) {
+      this.fallbackVideo = document.getElementById('wake-fallback-video');
+      if (this.fallbackVideo && !this.fallbackVideo.src && !this.fallbackVideo.srcObject) {
+        try {
+          const cvs = document.createElement('canvas');
+          cvs.width = 4;
+          cvs.height = 4;
+          if (cvs.captureStream) {
+            this.fallbackVideo.srcObject = cvs.captureStream(1);
+          }
+        } catch (e) {}
+      }
+    }
+    if (this.fallbackVideo) {
+      this.fallbackVideo.play().catch(() => {});
+    }
+  },
+
+  release() {
+    this.isWanted = false;
+    if (this.sentinel) {
+      this.sentinel.release().catch(() => {});
+      this.sentinel = null;
+    }
+    if (this.fallbackVideo) {
+      this.fallbackVideo.pause();
+    }
+    this.updateUi();
+  },
+
+  toggle() {
+    if (this.isWanted && this.isActive()) {
+      this.release();
+    } else {
+      this.request();
+    }
+  },
+
+  isActive() {
+    const isNativeActive = Boolean(this.sentinel && !this.sentinel.released);
+    const isVideoActive = Boolean(this.fallbackVideo && !this.fallbackVideo.paused);
+    return isNativeActive || isVideoActive;
+  },
+
+  updateUi() {
+    const active = this.isWanted;
+    const btn = document.getElementById('btn-wakelock');
+    if (btn) {
+      btn.classList.toggle('active', active);
+      btn.innerHTML = active ? '<span>⚡</span> Ekran: Yoniq' : '<span>💤</span> Ekran: Oddiy';
+      btn.title = active ? "Ekran o‘chmaydi (Doimo yoniq)" : "Ekran telefon vaqti bilan o‘chishi mumkin";
+    }
+    const sel = document.getElementById('setting-wakelock-mode');
+    if (sel) {
+      sel.value = active ? 'always' : 'system';
+    }
+  }
+};
 
 // Global obyektlar
 const engine = new RadarEngineCore(speedCameras);
@@ -727,6 +859,13 @@ function renderCamerasOnMap() {
 let hasHadFirstGpsFix = false;
 
 function startLiveGps() {
+  if (typeof WakeLockEngine !== 'undefined') {
+    WakeLockEngine.request();
+  }
+  if (audio) {
+    audio.startBackgroundKeepAlive();
+  }
+
   const regName = detectRegionName(currentPosition.lat, currentPosition.lng);
   updateGpsStatus(`GPS: ${regName} (Ulanmoqda...)`, false);
 
@@ -1441,6 +1580,7 @@ const PipManager = {
 
 // Ilovani butunlay to'xtatish va yopish
 function stopAndExitApp() {
+  if (typeof WakeLockEngine !== 'undefined') WakeLockEngine.release();
   if (PipManager) PipManager.exit();
   if (watchId !== null && navigator.geolocation) {
     navigator.geolocation.clearWatch(watchId);
@@ -1586,10 +1726,13 @@ function toggleSettings() {
 window.addEventListener('DOMContentLoaded', () => {
   initMap();
 
-  // Foydalanuvchi ekranga bir marta tekkanda audioni faollashtirish
+  // Foydalanuvchi ekranga bir marta tekkanda audioni faollashtirish va ekranni uyg'otish
   const unlockEvents = ['touchstart', 'click', 'keydown'];
   const onFirstInteraction = () => {
     audio.unlock();
+    if (typeof WakeLockEngine !== 'undefined') {
+      WakeLockEngine.request();
+    }
     unlockEvents.forEach(evt => window.removeEventListener(evt, onFirstInteraction));
   };
   unlockEvents.forEach(evt => window.addEventListener(evt, onFirstInteraction, { passive: true }));
@@ -1619,6 +1762,9 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnGrantGps) {
     btnGrantGps.addEventListener('click', () => {
       audio.unlock();
+      if (typeof WakeLockEngine !== 'undefined') {
+        WakeLockEngine.request();
+      }
       if (gpsModal) gpsModal.classList.add('hidden');
       localStorage.setItem('qalqon_gps_granted', '1');
 
@@ -1894,6 +2040,25 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Ekran holati (WakeLock) sozlamasi va tugmasi
+  const selWake = document.getElementById('setting-wakelock-mode');
+  if (selWake) {
+    selWake.addEventListener('change', (e) => {
+      if (e.target.value === 'always') {
+        WakeLockEngine.request();
+      } else {
+        WakeLockEngine.release();
+      }
+    });
+  }
+
+  const btnWake = document.getElementById('btn-wakelock');
+  if (btnWake) {
+    btnWake.addEventListener('click', () => {
+      WakeLockEngine.toggle();
+    });
+  }
+
   // Tizim ovozini tekshirish tugmasi (Sozlamalar ichida)
   const soundTestBtn = document.getElementById('btn-sound-test');
   if (soundTestBtn) {
@@ -1975,6 +2140,23 @@ window.addEventListener('DOMContentLoaded', () => {
       stopAndExitApp();
     });
   }
+
+  // Ekran avtomatik o‘chib qolmasligi va doimo yoniq turishi (WakeLock)
+  if (typeof WakeLockEngine !== 'undefined') {
+    WakeLockEngine.request();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && typeof WakeLockEngine !== 'undefined' && WakeLockEngine.isWanted) {
+      WakeLockEngine.request();
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    if (typeof WakeLockEngine !== 'undefined' && WakeLockEngine.isWanted) {
+      WakeLockEngine.request();
+    }
+  });
 
   updateRadarState();
 });

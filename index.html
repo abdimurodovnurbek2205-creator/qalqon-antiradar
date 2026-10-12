@@ -97,6 +97,13 @@
         <label>Ovoz balandligi</label>
         <input type="range" id="setting-volume-slider" min="0" max="100" value="100">
       </div>
+      <div class="setting-item">
+        <label>Ekran holati (Avtomatik o‘chmaslik)</label>
+        <select id="setting-wakelock-mode">
+          <option value="always" selected>⚡ Doimo yoniq (Qulflanmaydi)</option>
+          <option value="system">💤 Oddiy (Telefon sozlamasi bo‘yicha)</option>
+        </select>
+      </div>
       <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
         <label>Tizim tekshiruvi</label>
         <button id="btn-sound-test" class="sim-btn" style="width:100%; justify-content:center; border-color:var(--accent-cyan); color:var(--accent-cyan);">
@@ -197,6 +204,9 @@
       </div>
 
       <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+        <button id="btn-wakelock" class="sim-btn active" style="border-color:#10b981; color:#10b981;" title="Ekran o‘chib qolmasligi (Doimo yonib turadi)">
+          <span>⚡</span> Ekran: Yoniq
+        </button>
         <button id="btn-pip-bottom" class="sim-btn" style="border-color:var(--accent-cyan); color:var(--accent-cyan);" title="Kichik to'rtburchak suzuvchi oyna (Boshqa ilovalar ustida)">
           <span>📌</span> Mini-oyna (PiP)
         </button>
@@ -335,6 +345,13 @@
             <span>Lochin, Uch oyoq, Kameralar va Jarimalardan ogohlantiradi</span>
           </div>
         </div>
+        <div class="feature-item">
+          <span class="feat-icon">⚡</span>
+          <div>
+            <strong>Ekran o‘chmasligi va Orqa fon</strong>
+            <span>Haydashda ekran o‘chmaydi, telefon qulflanganda ham ovozli ishlaydi</span>
+          </div>
+        </div>
       </div>
 
       <button id="btn-grant-gps" class="btn-primary-gps">
@@ -391,6 +408,7 @@
   <div id="pip-render-container" style="position: fixed; bottom: 0; right: 0; width: 2px; height: 2px; overflow: hidden; pointer-events: none; z-index: -1;">
     <canvas id="pip-canvas" width="360" height="360"></canvas>
     <video id="pip-video" width="360" height="360" playsinline webkit-playsinline muted autoplay autopictureinpicture></video>
+    <video id="wake-fallback-video" width="4" height="4" playsinline webkit-playsinline muted loop></video>
   </div>
 
   <!-- Leaflet JS -->

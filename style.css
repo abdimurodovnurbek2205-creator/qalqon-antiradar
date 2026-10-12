@@ -694,6 +694,13 @@ body.hud-mode .hud-screen {
   color: var(--accent-cyan);
 }
 
+#btn-wakelock.active {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3) !important;
+}
+
 /* Audio Prompt Pill */
 .audio-prompt-pill {
   position: absolute;
