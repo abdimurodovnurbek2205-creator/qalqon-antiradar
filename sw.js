@@ -3,7 +3,7 @@
  * Qotib qolishlarni bartaraf etuvchi, tezkor reload va offline himoya
  */
 
-const CACHE_NAME = 'qalqon-v2-1022';
+const CACHE_NAME = 'qalqon-v2-1023';
 const CORE_ASSETS = [
   './',
   './index.html',

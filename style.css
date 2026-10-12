@@ -1530,13 +1530,6 @@ body.hud-mode .hud-screen {
     box-shadow: 0 0 10px rgba(0, 242, 254, 0.25) !important;
   }
 
-  #btn-pip.active-glow {
-    background: rgba(0, 242, 254, 0.25) !important;
-    border-color: var(--accent-cyan) !important;
-    color: var(--accent-cyan) !important;
-    box-shadow: 0 0 12px rgba(0, 242, 254, 0.4) !important;
-  }
-
   #btn-app-close {
     background: rgba(239, 68, 68, 0.2) !important;
     border-color: rgba(239, 68, 68, 0.5) !important;

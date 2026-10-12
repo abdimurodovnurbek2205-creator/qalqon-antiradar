@@ -1070,6 +1070,40 @@ function updateRadarState() {
   if (typeof PipManager !== 'undefined' && PipManager.isActive) {
     PipManager.draw();
   }
+
+  // Telefon qulflanganda qulf ekranidagi MediaSession bildirishnomasini yangilash
+  const currentSpeed = (currentPosition && currentPosition.speed) ? currentPosition.speed : 0;
+  updateLockScreenStatus(currentSpeed, topAlert);
+}
+
+function updateLockScreenStatus(speed, topAlert) {
+  if (!('mediaSession' in navigator)) return;
+  try {
+    let title = `🛡️ ${speed} KM/H — Xavfsiz`;
+    let artist = "Yo'l ochiq, radarlar yo'q";
+    let album = "Qalqon Antiradar";
+
+    if (topAlert && topAlert.camera) {
+      const cam = topAlert.camera;
+      const warn = topAlert.isOverSpeed ? '🚨 XAVF +' + topAlert.speedDiff + ' km/h' : '⚠️ RADAR';
+      title = `${warn} | ${speed} km/h (Cheklov: ${cam.speedLimit})`;
+      artist = `${topAlert.distance}m: ${cam.name}`;
+      album = cam.roadName || "O'zbekiston yo'llari";
+    }
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title,
+      artist: artist,
+      album: album,
+      artwork: [
+        {
+          src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23070a10' stroke='%2300f2fe' stroke-width='4'/><path d='M50 15 L78 28 V52 C78 70 66 84 50 90 C34 84 22 70 22 52 V28 Z' fill='%230f172a' stroke='%2300f2fe' stroke-width='3'/><path d='M50 25 L68 34 V52 C68 64 60 74 50 80 C40 74 32 64 32 52 V34 Z' fill='%2300f2fe'/><circle cx='50' cy='52' r='8' fill='%23070a10'/></svg>",
+          sizes: "192x192 512x512",
+          type: "image/svg+xml"
+        }
+      ]
+    });
+  } catch (e) {}
 }
 
 function updateNearbyCamsList() {
@@ -1358,9 +1392,7 @@ const PipManager = {
   },
 
   updateButtons(active) {
-    const btnHeader = document.getElementById('btn-pip');
     const btnBottom = document.getElementById('btn-pip-bottom');
-    if (btnHeader) btnHeader.classList.toggle('active-glow', active);
     if (btnBottom) btnBottom.classList.toggle('active', active);
   },
 
@@ -1397,6 +1429,7 @@ const PipManager = {
           this.stream = this.canvas.captureStream(25);
           this.video.srcObject = this.stream;
         }
+        this.video.muted = true;
         await this.video.play();
         if (document.pictureInPictureElement) {
           await document.exitPictureInPicture();
@@ -2067,13 +2100,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (typeof PipManager !== 'undefined') {
     PipManager.init();
-  }
-
-  const btnPip = document.getElementById('btn-pip');
-  if (btnPip) {
-    btnPip.addEventListener('click', () => {
-      PipManager.requestPip();
-    });
   }
 
   const btnPipBottom = document.getElementById('btn-pip-bottom');
