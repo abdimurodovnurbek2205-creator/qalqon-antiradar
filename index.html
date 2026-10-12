@@ -363,10 +363,34 @@
     </div>
   </div>
 
-  <!-- Picture-in-Picture (Suzuvchi To'rtburchak Mini-Oyna) uchun Canvas va Video -->
-  <div style="position: fixed; left: -9999px; top: -9999px; pointer-events: none; opacity: 0;">
+  <!-- Suzuvchi To'rtburchak Mini-Vidjet (Ekranda erkin suriluvchi kvadrat spidometr) -->
+  <div id="floating-square-widget" class="floating-square-widget hidden">
+    <div class="fsw-header">
+      <span class="fsw-title">🛡️ QALQON</span>
+      <div class="fsw-actions">
+        <button id="btn-fsw-pause" class="fsw-btn-pause" title="Radarni to'xtatish/yoqish">⏸️</button>
+        <button id="btn-fsw-close" class="fsw-btn-close" title="Mini-oynani yopish">✕</button>
+      </div>
+    </div>
+    <div class="fsw-speed-row">
+      <div class="fsw-speed-box">
+        <span id="fsw-speed-val" class="fsw-speed-num">0</span>
+        <span class="fsw-speed-unit">KM/H</span>
+      </div>
+      <div id="fsw-limit-box" class="fsw-limit-circle">
+        <span id="fsw-limit-val">60</span>
+      </div>
+    </div>
+    <div id="fsw-alert-box" class="fsw-alert-area">
+      <span id="fsw-alert-icon">🛡️</span>
+      <span id="fsw-alert-text">Yo'l ochiq</span>
+    </div>
+  </div>
+
+  <!-- Picture-in-Picture (OS darajasidagi suzuvchi video oyna) uchun faol konteyner -->
+  <div id="pip-render-container" style="position: fixed; bottom: 0; right: 0; width: 2px; height: 2px; overflow: hidden; pointer-events: none; z-index: -1;">
     <canvas id="pip-canvas" width="360" height="360"></canvas>
-    <video id="pip-video" playsinline muted autoplay autopictureinpicture></video>
+    <video id="pip-video" width="360" height="360" playsinline webkit-playsinline muted autoplay autopictureinpicture></video>
   </div>
 
   <!-- Leaflet JS -->

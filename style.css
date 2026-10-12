@@ -924,6 +924,169 @@ body.hud-mode .hud-screen {
 }
 
 /* ============================================================
+   SUZUVCHI TO'RTBURCHAK MINI-VIDJET (FLOATING SQUARE WIDGET)
+   ============================================================ */
+.floating-square-widget {
+  position: fixed;
+  bottom: 85px;
+  right: 16px;
+  width: 195px;
+  height: 195px;
+  background: rgba(8, 12, 22, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 242, 254, 0.35);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  box-sizing: border-box;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  animation: popInWidget 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-square-widget.paused {
+  border-color: #f59e0b;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(245, 158, 11, 0.35);
+}
+
+.floating-square-widget.overspeed {
+  border-color: #ff3344;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 35px rgba(255, 51, 68, 0.6);
+  animation: pulse-danger-fsw 0.8s infinite alternate;
+}
+
+@keyframes pulse-danger-fsw {
+  from { transform: scale(1); }
+  to { transform: scale(1.02); }
+}
+
+@keyframes popInWidget {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fsw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fsw-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+}
+
+.fsw-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fsw-btn-pause,
+.fsw-btn-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fsw-btn-pause:hover {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: #f59e0b;
+}
+
+.fsw-btn-close:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: #ef4444;
+}
+
+.fsw-speed-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0;
+}
+
+.fsw-speed-box {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.fsw-speed-num {
+  font-size: 48px;
+  font-weight: 900;
+  color: #00ff66;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.floating-square-widget.overspeed .fsw-speed-num {
+  color: #ff3344;
+}
+
+.fsw-speed-unit {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+.fsw-limit-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 4px solid #ff2233;
+  background: #fff;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+.fsw-alert-area {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fsw-alert-area.danger {
+  background: rgba(255, 51, 68, 0.2);
+  border: 1px solid rgba(255, 51, 68, 0.4);
+  color: #ff8899;
+}
+
+/* ============================================================
    RADAR BELGILASH MODALI VA HAMJAMIYAT (COMMUNITY REPORTS)
    ============================================================ */
 .hidden {
@@ -1282,28 +1445,29 @@ body.hud-mode .hud-screen {
    ============================================================ */
 @media (max-width: 768px) {
   header {
-    padding: 6px 10px;
+    padding: 6px 8px;
     height: 52px;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 6px;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .logo-area {
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
   }
 
   .logo-icon {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
   }
 
   .logo-text h1 {
-    font-size: 13px;
+    font-size: 12px;
+    white-space: nowrap;
   }
 
   .logo-text span {
@@ -1319,18 +1483,26 @@ body.hud-mode .hud-screen {
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     margin-left: auto;
-    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    max-width: calc(100vw - 42px);
+    padding: 2px 0;
+  }
+
+  .header-actions::-webkit-scrollbar {
+    display: none;
   }
 
   .btn-icon {
     padding: 0;
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    border-radius: 9px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1339,7 +1511,7 @@ body.hud-mode .hud-screen {
   }
 
   .btn-icon span {
-    font-size: 16px !important;
+    font-size: 15px !important;
     margin: 0 !important;
     line-height: 1;
   }
@@ -1362,6 +1534,12 @@ body.hud-mode .hud-screen {
     background: rgba(239, 68, 68, 0.2) !important;
     border-color: rgba(239, 68, 68, 0.5) !important;
     color: #fca5a5 !important;
+  }
+
+  @media (max-width: 480px) {
+    .logo-text {
+      display: none !important;
+    }
   }
 
   .settings-drawer {

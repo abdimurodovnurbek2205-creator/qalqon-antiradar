@@ -951,6 +951,14 @@ function updateRadarState() {
 
   // Yaqin atrofdagi kameralar ro'yxatini yangilash
   updateNearbyCamsList();
+
+  // Suzuvchi vidjet va PiP oynasini harakat davomida yangilash
+  if (typeof FloatingWidget !== 'undefined') {
+    FloatingWidget.update();
+  }
+  if (typeof PipManager !== 'undefined' && PipManager.isActive) {
+    PipManager.draw();
+  }
 }
 
 function updateNearbyCamsList() {
@@ -1009,6 +1017,171 @@ function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
   if (fill) ctx.fill();
   if (stroke) ctx.stroke();
 }
+
+function makeDraggable(el) {
+  let isDragging = false;
+  let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+  const onStart = (e) => {
+    if (e.target.closest && e.target.closest('button')) return;
+    if (e.target.tagName === 'BUTTON') return;
+    isDragging = true;
+    const touch = e.touches ? e.touches[0] : e;
+    startX = touch.clientX;
+    startY = touch.clientY;
+    const rect = el.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+  };
+
+  const onMove = (e) => {
+    if (!isDragging) return;
+    if (e.cancelable) e.preventDefault();
+    const touch = e.touches ? e.touches[0] : e;
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    const maxX = window.innerWidth - el.offsetWidth - 8;
+    const maxY = window.innerHeight - el.offsetHeight - 8;
+    const newX = Math.max(8, Math.min(maxX, initialLeft + dx));
+    const newY = Math.max(8, Math.min(maxY, initialTop + dy));
+    el.style.left = `${newX}px`;
+    el.style.top = `${newY}px`;
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+  };
+
+  const onEnd = () => {
+    isDragging = false;
+  };
+
+  el.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+
+  el.addEventListener('touchstart', onStart, { passive: true });
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onEnd);
+}
+
+const FloatingWidget = {
+  el: null,
+  isPaused: false,
+  isVisible: false,
+
+  init() {
+    this.el = document.getElementById('floating-square-widget');
+    if (!this.el) return;
+
+    makeDraggable(this.el);
+
+    const btnClose = document.getElementById('btn-fsw-close');
+    if (btnClose) {
+      btnClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hide();
+        if (typeof PipManager !== 'undefined') {
+          PipManager.exit();
+        }
+      });
+    }
+
+    const btnPause = document.getElementById('btn-fsw-pause');
+    if (btnPause) {
+      btnPause.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePause();
+      });
+    }
+  },
+
+  show() {
+    if (!this.el) return;
+    this.isVisible = true;
+    this.el.classList.remove('hidden');
+    if (typeof PipManager !== 'undefined') {
+      PipManager.updateButtons(true);
+    }
+    this.update();
+  },
+
+  hide() {
+    if (!this.el) return;
+    this.isVisible = false;
+    this.el.classList.add('hidden');
+    if (typeof PipManager !== 'undefined') {
+      PipManager.updateButtons(false);
+    }
+  },
+
+  toggle() {
+    if (this.isVisible) this.hide();
+    else this.show();
+  },
+
+  togglePause() {
+    this.isPaused = !this.isPaused;
+    audio.muted = this.isPaused;
+    if (this.isPaused) {
+      audio.stopAll();
+    }
+    const btnPause = document.getElementById('btn-fsw-pause');
+    if (btnPause) {
+      btnPause.textContent = this.isPaused ? '▶️' : '⏸️';
+    }
+    if (this.el) {
+      this.el.classList.toggle('paused', this.isPaused);
+    }
+    if (typeof PipManager !== 'undefined') {
+      PipManager.setPaused(this.isPaused);
+    }
+    this.update();
+  },
+
+  update() {
+    if (!this.el || !this.isVisible) return;
+
+    const speed = (currentPosition && currentPosition.speed) ? currentPosition.speed : 0;
+    const speedEl = document.getElementById('fsw-speed-val');
+    if (speedEl) speedEl.textContent = speed;
+
+    const alerts = engine ? engine.check(currentPosition) : [];
+    const topAlert = alerts.length > 0 ? alerts[0] : null;
+
+    const limitEl = document.getElementById('fsw-limit-val');
+    const alertBox = document.getElementById('fsw-alert-box');
+    const alertIcon = document.getElementById('fsw-alert-icon');
+    const alertText = document.getElementById('fsw-alert-text');
+
+    if (this.isPaused) {
+      if (alertBox) alertBox.className = 'fsw-alert-area';
+      if (alertIcon) alertIcon.textContent = '⏸️';
+      if (alertText) alertText.textContent = "To'xtatilgan";
+      this.el.classList.remove('overspeed');
+      return;
+    }
+
+    if (topAlert && topAlert.camera) {
+      const cam = topAlert.camera;
+      if (limitEl) limitEl.textContent = cam.speedLimit || '—';
+      if (alertIcon) alertIcon.textContent = '⚠️';
+      if (alertText) alertText.textContent = `${topAlert.distance}m: ${cam.name}`;
+
+      if (topAlert.isOverSpeed) {
+        this.el.classList.add('overspeed');
+        if (alertBox) alertBox.className = 'fsw-alert-area danger';
+      } else {
+        this.el.classList.remove('overspeed');
+        if (alertBox) alertBox.className = 'fsw-alert-area';
+      }
+    } else {
+      if (limitEl) limitEl.textContent = '60';
+      if (alertIcon) alertIcon.textContent = '🛡️';
+      if (alertText) alertText.textContent = "Yo'l ochiq";
+      this.el.classList.remove('overspeed');
+      if (alertBox) alertBox.className = 'fsw-alert-area';
+    }
+  }
+};
 
 const PipManager = {
   canvas: null,
@@ -1094,30 +1267,45 @@ const PipManager = {
   },
 
   async requestPip() {
-    if (!document.pictureInPictureEnabled || !this.video) {
-      console.warn("Qurilmangiz suzuvchi oynani qo'llab-quvvatlamaydi");
-      return;
+    // 1. Ekranda to'rtburchak vidjetni ko'rsatish yoki yopish
+    if (typeof FloatingWidget !== 'undefined') {
+      if (FloatingWidget.isVisible) {
+        FloatingWidget.hide();
+        this.exit();
+        return;
+      } else {
+        FloatingWidget.show();
+      }
     }
 
-    try {
-      if (!this.stream && this.canvas) {
-        this.stream = this.canvas.captureStream(10);
-        this.video.srcObject = this.stream;
+    // 2. Agar brauzerda OS Picture-in-Picture mavjud bo'lsa, tizim darajasida ham ochish
+    if (this.video && (document.pictureInPictureEnabled || this.video.webkitSupportsPresentationMode)) {
+      try {
+        this.draw();
+        if (!this.stream && this.canvas) {
+          this.stream = this.canvas.captureStream(25);
+          this.video.srcObject = this.stream;
+        }
+        await this.video.play();
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else if (this.video.requestPictureInPicture) {
+          await this.video.requestPictureInPicture();
+        } else if (this.video.webkitSetPresentationMode) {
+          this.video.webkitSetPresentationMode('picture-in-picture');
+        }
+      } catch (err) {
+        console.warn('OS PiP ogohlantirish:', err.message);
       }
-      await this.video.play();
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else {
-        await this.video.requestPictureInPicture();
-      }
-    } catch (err) {
-      console.warn('PiP ochish:', err.message);
     }
   },
 
   exit() {
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture().catch(() => {});
+    }
+    if (typeof FloatingWidget !== 'undefined') {
+      FloatingWidget.hide();
     }
   },
 
@@ -1734,6 +1922,10 @@ window.addEventListener('DOMContentLoaded', () => {
   // ============================================================
   // 📌 SUZUVCHI MINI-OYNA (PICTURE-IN-PICTURE) VA YOPISH
   // ============================================================
+  if (typeof FloatingWidget !== 'undefined') {
+    FloatingWidget.init();
+  }
+
   if (typeof PipManager !== 'undefined') {
     PipManager.init();
   }
