@@ -403,6 +403,8 @@ class AudioCore {
     this.volume = 1.0;
     this.enableGeiger = true;
     this.audioCache = {};
+    this.activeAudios = new Set();
+    this.testTimeouts = [];
     this.lastGeigerTime = 0;
     this.lastSpokenKey = '';
     this.lastVoiceTime = 0;
@@ -487,16 +489,42 @@ class AudioCore {
   }
 
   stopAll() {
+    // 1. Rejalashtirilgan sinov taymerlarini bekor qilish
+    if (this.testTimeouts && this.testTimeouts.length > 0) {
+      this.testTimeouts.forEach(t => clearTimeout(t));
+      this.testTimeouts = [];
+    }
+
+    // 2. Ayni paytda chalinayotgan barcha audio nusxalarni to'xtatish
+    if (this.activeAudios) {
+      this.activeAudios.forEach(a => {
+        try {
+          a.pause();
+          a.currentTime = 0;
+        } catch (e) {}
+      });
+      this.activeAudios.clear();
+    }
+
+    // 3. Keshdagi tovushlarni ham to'xtatish
     Object.values(this.audioCache).forEach(a => {
       try {
         a.pause();
         a.currentTime = 0;
       } catch (e) {}
     });
+
     if (this.keepAliveAudio) {
       try {
         this.keepAliveAudio.pause();
       } catch (e) {}
+    }
+
+    // 4. Test tugmasining holatini tiklash
+    const soundTestBtn = document.getElementById('btn-sound-test');
+    if (soundTestBtn) {
+      soundTestBtn.innerHTML = '<span>⚡</span> Ovozni sinash';
+      soundTestBtn.classList.remove('active');
     }
   }
 
@@ -507,7 +535,17 @@ class AudioCore {
       if (src) {
         const clone = src.cloneNode();
         clone.volume = Math.max(0, Math.min(1.0, this.volume * volMultiplier));
-        clone.play().catch(() => {});
+        if (this.activeAudios) {
+          this.activeAudios.add(clone);
+          const cleanup = () => {
+            if (this.activeAudios) this.activeAudios.delete(clone);
+          };
+          clone.addEventListener('ended', cleanup, { once: true });
+          clone.addEventListener('pause', cleanup, { once: true });
+        }
+        clone.play().catch(() => {
+          if (this.activeAudios) this.activeAudios.delete(clone);
+        });
       }
     } catch (e) {
       console.warn("Audio play error:", e);
@@ -1738,6 +1776,7 @@ function toggleMute() {
   audio.muted = !audio.muted;
   const btn = document.getElementById('btn-mute');
   if (audio.muted) {
+    audio.stopAll();
     btn.innerHTML = '<span>🔇</span> Ovoz O\'chiq';
     btn.classList.add('active');
   } else {
@@ -2106,28 +2145,47 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Tizim ovozini tekshirish tugmasi (Sozlamalar ichida)
+  // Tizim ovozini tekshirish va to'xtatish tugmalari (Sozlamalar ichida)
   const soundTestBtn = document.getElementById('btn-sound-test');
+  const soundStopBtn = document.getElementById('btn-sound-stop');
+
   if (soundTestBtn) {
     soundTestBtn.addEventListener('click', () => {
       audio.unlock();
+      audio.stopAll(); // Oldingi ovozlar yoki taymerlarni zudlik bilan tozalash
       audio.muted = false;
-      document.getElementById('btn-mute').innerHTML = '<span>🔊</span> Ovozli';
-      document.getElementById('btn-mute').classList.remove('active');
+
+      const btnMute = document.getElementById('btn-mute');
+      if (btnMute) {
+        btnMute.innerHTML = '<span>🔊</span> Ovozli';
+        btnMute.classList.remove('active');
+      }
+
+      soundTestBtn.innerHTML = '<span>🔊</span> Sinov ketyapti...';
+      soundTestBtn.classList.add('active');
 
       audio.playRadarAlertChime();
-      setTimeout(() => audio.playFile('lochin_70.mp3'), 450);
-      setTimeout(() => audio.playFile('neoline_click.wav'), 1900);
-      setTimeout(() => audio.playFile('neoline_click.wav'), 2300);
-      setTimeout(() => audio.playFile('neoline_click.wav'), 2600);
-      setTimeout(() => audio.playFile('rear_70.mp3'), 2900);
-      setTimeout(() => audio.playFile('uch_oyoq_70.mp3'), 5200);
-      setTimeout(() => audio.playFile('patrul_360.mp3'), 7600);
-      setTimeout(() => audio.playFile('chorraha.mp3'), 10400);
-      setTimeout(() => {
-        audio.playFile('slowdown.mp3');
-        audio.playOverSpeedAlarm();
-      }, 13200);
+
+      audio.testTimeouts = [
+        setTimeout(() => audio.playFile('lochin_70.mp3'), 450),
+        setTimeout(() => audio.playFile('neoline_click.wav'), 1900),
+        setTimeout(() => audio.playFile('neoline_click.wav'), 2300),
+        setTimeout(() => audio.playFile('rear_70.mp3'), 2800),
+        setTimeout(() => audio.playFile('uch_oyoq_70.mp3'), 5200),
+        setTimeout(() => audio.playFile('cleared.mp3'), 7600),
+        setTimeout(() => {
+          if (soundTestBtn) {
+            soundTestBtn.innerHTML = '<span>⚡</span> Ovozni sinash';
+            soundTestBtn.classList.remove('active');
+          }
+        }, 9200)
+      ];
+    });
+  }
+
+  if (soundStopBtn) {
+    soundStopBtn.addEventListener('click', () => {
+      audio.stopAll();
     });
   }
 

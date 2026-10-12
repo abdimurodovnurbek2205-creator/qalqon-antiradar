@@ -3,14 +3,14 @@
  * Qotib qolishlarni bartaraf etuvchi, tezkor reload va offline himoya
  */
 
-const CACHE_NAME = 'qalqon-v2-1025';
+const CACHE_NAME = 'qalqon-v2-1026';
 const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
-  './style.css?v=2.1025',
+  './style.css?v=2.1026',
   './app.js',
-  './app.js?v=2.1025',
+  './app.js?v=2.1026',
   './manifest.json',
   './src/data/speedcams.json',
   './src/supabaseClient.js'

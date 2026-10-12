@@ -8,7 +8,7 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <!-- Custom Styling -->
-  <link rel="stylesheet" href="style.css?v=2.1025">
+  <link rel="stylesheet" href="style.css?v=2.1026">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#070a10">
 </head>
@@ -102,10 +102,15 @@
         </select>
       </div>
       <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
-        <label>Tizim tekshiruvi</label>
-        <button id="btn-sound-test" class="sim-btn" style="width:100%; justify-content:center; border-color:var(--accent-cyan); color:var(--accent-cyan);">
-          <span>⚡</span> Ovozni sinab ko'rish
-        </button>
+        <label>Tizim tekshiruvi (Ovoz testi)</label>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-sound-test" type="button" class="sim-btn" style="flex: 1.2; justify-content:center; border-color:var(--accent-cyan); color:var(--accent-cyan); font-weight:700; padding:10px 8px; font-size:12px;">
+            <span>⚡</span> Ovozni sinash
+          </button>
+          <button id="btn-sound-stop" type="button" class="sim-btn" style="flex: 1; justify-content:center; background:rgba(239,68,68,0.18); border-color:#ef4444; color:#ff6b6b; font-weight:700; padding:10px 8px; font-size:12px;">
+            <span>⏹️</span> To'xtatish
+          </button>
+        </div>
       </div>
 
     </div>
@@ -413,7 +418,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="src/supabaseClient.js"></script>
   <!-- Application JS -->
-  <script src="app.js?v=2.1025"></script>
+  <script src="app.js?v=2.1026"></script>
 
   <!-- Offline PWA Service Worker -->
   <script>
