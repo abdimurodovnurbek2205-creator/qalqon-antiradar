@@ -1,12 +1,21 @@
 {
+  "id": "uz.qalqon.antiradar",
   "name": "Qalqon Antiradar - Professional GPS Radar",
-  "short_name": "Qalqon",
+  "short_name": "Qalqon Radar",
   "description": "O'zbekiston yo'llari bo'ylab barcha radarlar, kameralar va patrul ogohlantiruvchi tizim",
+  "lang": "uz",
+  "dir": "ltr",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#070a10",
   "theme_color": "#070a10",
-  "orientation": "any",
+  "categories": [
+    "navigation",
+    "utilities",
+    "travel"
+  ],
   "icons": [
     {
       "src": "./icon-192.png",
@@ -19,6 +28,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./screenshot.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Qalqon Antiradar asosiy xarita va spidometr ko'rinishi"
     }
   ]
 }
