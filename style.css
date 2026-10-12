@@ -135,6 +135,18 @@ header {
   border-color: var(--accent-red);
 }
 
+.btn-close-app {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  color: #ff6b6b !important;
+}
+
+.btn-close-app:hover {
+  background: #ef4444 !important;
+  color: #fff !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
 /* Main Workspace */
 .main-workspace {
   flex: 1;
@@ -1337,6 +1349,19 @@ body.hud-mode .hud-screen {
     border-color: rgba(0, 242, 254, 0.5) !important;
     color: var(--accent-cyan) !important;
     box-shadow: 0 0 10px rgba(0, 242, 254, 0.25) !important;
+  }
+
+  #btn-pip.active-glow {
+    background: rgba(0, 242, 254, 0.25) !important;
+    border-color: var(--accent-cyan) !important;
+    color: var(--accent-cyan) !important;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.4) !important;
+  }
+
+  #btn-app-close {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    color: #fca5a5 !important;
   }
 
   .settings-drawer {

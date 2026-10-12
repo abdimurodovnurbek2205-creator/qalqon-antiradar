@@ -39,6 +39,9 @@
       <button id="btn-report-cam" class="btn-icon" style="background: rgba(255, 68, 68, 0.2); border-color: rgba(255, 68, 68, 0.5); color: #ff5555;" title="Yangi radar yoki patrulni belgilash">
         <span>⚠️</span> Belgilash
       </button>
+      <button id="btn-pip" class="btn-icon" title="Suzuvchi to'rtburchak mini-oyna (Boshqa ilovalar ustida)">
+        <span>📌</span> Mini-oyna
+      </button>
       <button id="btn-layer" class="btn-icon" title="Xarita turini o'zgartirish (Google / OSM / Satellite)">
         <span>🗺️</span> Xarita
       </button>
@@ -53,6 +56,9 @@
       </button>
       <button id="btn-settings-toggle" class="btn-icon" title="Sozlamalar">
         <span>⚙️</span>
+      </button>
+      <button id="btn-app-close" class="btn-icon btn-close-app" title="Ilovani to'xtatish va yopish">
+        <span>✕</span>
       </button>
     </div>
   </header>
@@ -190,7 +196,10 @@
         <span id="user-coords-text" style="font-size:13px; color:var(--accent-cyan); font-weight:700;">Lokatsiya aniqlanmoqda...</span>
       </div>
 
-      <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+      <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+        <button id="btn-pip-bottom" class="sim-btn" style="border-color:var(--accent-cyan); color:var(--accent-cyan);" title="Kichik to'rtburchak suzuvchi oyna (Boshqa ilovalar ustida)">
+          <span>📌</span> Mini-oyna (PiP)
+        </button>
         <button id="btn-follow-toggle" class="sim-btn active">
           <span>🧭</span> Avto-kuzatuv: Yoqiq
         </button>
@@ -332,6 +341,32 @@
         <span>🚀</span> RADAR VA GPS-NI YOQISH
       </button>
     </div>
+  </div>
+
+  <!-- Ilovani To'xtatish va Yopish Modali -->
+  <div id="exit-modal" class="report-modal-overlay hidden">
+    <div class="report-modal-box" style="text-align: center; max-width: 360px;">
+      <div style="font-size: 42px; margin-bottom: 8px;">🛑</div>
+      <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 20px; justify-content: center;">QALQON ANTIRADAR</h3>
+      <p style="color: var(--text-dim); font-size: 13px; margin: 0 0 20px 0; line-height: 1.5;">
+        Radar monitoringini to‘xtatib, dasturdan chiqmoqchimisiz?
+      </p>
+
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-cancel-exit" class="sim-btn" style="flex: 1; justify-content: center; padding: 12px; font-size: 13px;">
+          Bekor qilish
+        </button>
+        <button id="btn-confirm-exit" class="sim-btn" style="flex: 1; justify-content: center; background: #ef4444; border-color: #ef4444; color: #fff; padding: 12px; font-size: 13px; font-weight: 800;">
+          🛑 Ha, yopish
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Picture-in-Picture (Suzuvchi To'rtburchak Mini-Oyna) uchun Canvas va Video -->
+  <div style="position: fixed; left: -9999px; top: -9999px; pointer-events: none; opacity: 0;">
+    <canvas id="pip-canvas" width="360" height="360"></canvas>
+    <video id="pip-video" playsinline muted autoplay autopictureinpicture></video>
   </div>
 
   <!-- Leaflet JS -->

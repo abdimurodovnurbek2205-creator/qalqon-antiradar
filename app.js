@@ -990,6 +990,300 @@ function updateNearbyCamsList() {
   }).join('');
 }
 
+// ============================================================
+// 📌 PICTURE-IN-PICTURE (SUZUVCHI TO'RTBURCHAK MINI-OYNA)
+// Telefon o'rta (Home) tugmasi bosilganda yoki mini-oyna yoqilganda
+// ============================================================
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+
+const PipManager = {
+  canvas: null,
+  ctx: null,
+  video: null,
+  isActive: false,
+  isPaused: false,
+  stream: null,
+  drawTimer: null,
+
+  init() {
+    this.canvas = document.getElementById('pip-canvas');
+    if (!this.canvas) return;
+    this.ctx = this.canvas.getContext('2d');
+    this.video = document.getElementById('pip-video');
+
+    if (this.video) {
+      this.video.addEventListener('enterpictureinpicture', () => {
+        this.isActive = true;
+        this.updateButtons(true);
+      });
+      this.video.addEventListener('leavepictureinpicture', () => {
+        this.isActive = false;
+        this.updateButtons(false);
+      });
+    }
+
+    // MediaSession (Android PiP oynasi ustidagi boshqaruv tugmalari)
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: 'Qalqon Radar',
+          artist: 'Jonli Antiradar',
+          album: 'O\'zbekiston Yo\'llari'
+        });
+
+        navigator.mediaSession.setActionHandler('pause', () => {
+          this.setPaused(true);
+        });
+        navigator.mediaSession.setActionHandler('play', () => {
+          this.setPaused(false);
+        });
+        navigator.mediaSession.setActionHandler('stop', () => {
+          this.exit();
+        });
+      } catch (e) {}
+    }
+
+    // Telefonning o'rta (Home) tugmasi bosilganda yoki brauzer minimallashganda suzuvchi oynaga o'tish
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        if (!this.isActive && !this.isPaused && currentPosition) {
+          this.requestPip();
+        }
+      }
+    });
+
+    this.draw();
+    if (this.drawTimer) clearInterval(this.drawTimer);
+    this.drawTimer = setInterval(() => {
+      this.draw();
+    }, 500);
+  },
+
+  updateButtons(active) {
+    const btnHeader = document.getElementById('btn-pip');
+    const btnBottom = document.getElementById('btn-pip-bottom');
+    if (btnHeader) btnHeader.classList.toggle('active-glow', active);
+    if (btnBottom) btnBottom.classList.toggle('active', active);
+  },
+
+  setPaused(paused) {
+    this.isPaused = paused;
+    audio.muted = paused;
+    if (paused) {
+      audio.stopAll();
+    }
+    this.draw();
+  },
+
+  togglePause() {
+    this.setPaused(!this.isPaused);
+  },
+
+  async requestPip() {
+    if (!document.pictureInPictureEnabled || !this.video) {
+      console.warn("Qurilmangiz suzuvchi oynani qo'llab-quvvatlamaydi");
+      return;
+    }
+
+    try {
+      if (!this.stream && this.canvas) {
+        this.stream = this.canvas.captureStream(10);
+        this.video.srcObject = this.stream;
+      }
+      await this.video.play();
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await this.video.requestPictureInPicture();
+      }
+    } catch (err) {
+      console.warn('PiP ochish:', err.message);
+    }
+  },
+
+  exit() {
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture().catch(() => {});
+    }
+  },
+
+  draw() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const w = 360;
+    const h = 360;
+
+    // 1. To'rtburchak foni
+    const bgGrad = ctx.createLinearGradient(0, 0, w, h);
+    bgGrad.addColorStop(0, '#060a14');
+    bgGrad.addColorStop(1, '#0e1628');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Hoshiya
+    ctx.strokeStyle = this.isPaused ? '#f59e0b' : '#00f2fe';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, w - 4, h - 4);
+
+    // 2. Sarlavha
+    ctx.fillStyle = '#00f2fe';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('🛡️ QALQON RADAR', 16, 28);
+
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('GPS 🟢', w - 16, 28);
+
+    // 3. Markaziy Spidometr
+    const speed = (currentPosition && currentPosition.speed) ? currentPosition.speed : 0;
+    const alerts = engine ? engine.check(currentPosition) : [];
+    const topAlert = alerts.length > 0 ? alerts[0] : null;
+    const isOver = topAlert ? topAlert.isOverSpeed : false;
+
+    ctx.fillStyle = isOver ? '#ff3344' : '#00ff66';
+    ctx.font = '900 84px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${speed}`, w / 2 - 24, 138);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('KM/H', w / 2 + 50, 114);
+
+    // 4. Tezlik cheklovi belgisi
+    const limit = topAlert && topAlert.camera ? topAlert.camera.speedLimit : 60;
+    const signX = w - 50;
+    const signY = 108;
+    ctx.beginPath();
+    ctx.arc(signX, signY, 26, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#ff2233';
+    ctx.stroke();
+
+    ctx.fillStyle = '#000000';
+    ctx.font = '900 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${limit}`, signX, signY + 8);
+
+    // 5. Radar Kartasi
+    if (this.isPaused) {
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.2)';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      roundRect(ctx, 16, 172, w - 32, 112, 14, true, true);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = '900 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⏸ TO\'XTATILGAN', w / 2, 220);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '13px sans-serif';
+      ctx.fillText('Radar ovozi vaqtincha to\'xtatildi', w / 2, 248);
+    } else if (topAlert && topAlert.camera) {
+      const cam = topAlert.camera;
+      ctx.fillStyle = isOver ? 'rgba(255, 34, 51, 0.25)' : 'rgba(0, 242, 254, 0.15)';
+      ctx.strokeStyle = isOver ? '#ff3344' : '#00f2fe';
+      ctx.lineWidth = 2;
+      roundRect(ctx, 16, 172, w - 32, 112, 14, true, true);
+
+      ctx.fillStyle = isOver ? '#ff5566' : '#ffffff';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`⚠️ ${cam.name}`, w / 2, 208);
+
+      ctx.fillStyle = isOver ? '#ffdd44' : '#00ff66';
+      ctx.font = '900 30px sans-serif';
+      ctx.fillText(`${topAlert.distance} m`, w / 2, 246);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(cam.roadName || 'Yo\'l', w / 2, 270);
+    } else {
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, 16, 172, w - 32, 112, 14, true, true);
+
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🛡️ YO\'L OCHIQ', w / 2, 224);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '13px sans-serif';
+      ctx.fillText('Oldinda radarlar yo\'q', w / 2, 250);
+    }
+
+    // 6. Pastki Boshqaruv Qatori
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.fillRect(0, h - 52, w, 52);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h - 52);
+    ctx.lineTo(w, h - 52);
+    ctx.stroke();
+
+    ctx.fillStyle = this.isPaused ? '#f59e0b' : '#38bdf8';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    const pauseTxt = this.isPaused ? '▶️ Qayta yoqish (Play)' : '⏸️ To\'xtatish (Pause)';
+    ctx.fillText(pauseTxt, w / 2, h - 22);
+  }
+};
+
+// Ilovani butunlay to'xtatish va yopish
+function stopAndExitApp() {
+  if (PipManager) PipManager.exit();
+  if (watchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  audio.stopAll();
+  audio.muted = true;
+
+  const exitModal = document.getElementById('exit-modal');
+  if (exitModal) exitModal.classList.add('hidden');
+
+  updateGpsStatus("Radar to'xtatildi (Chiqildi)", false);
+
+  try {
+    window.close();
+  } catch (e) {}
+
+  document.body.innerHTML = `
+    <div style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#070b14; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
+      <div style="font-size:64px; margin-bottom:16px;">🛡️</div>
+      <h2 style="color:#00f2fe; margin-bottom:10px;">QALQON ANTIRADAR TO'XTATILDI</h2>
+      <p style="color:#94a3b8; max-width:380px; line-height:1.6; margin-bottom:28px;">
+        Radar monitoringi va audio ogohlantirishlar to‘xtatildi. Safaringiz bexatar bo‘lsin!
+      </p>
+      <button onclick="window.location.reload()" style="background:linear-gradient(135deg, #00f2fe, #2563eb); border:none; border-radius:12px; color:#030712; font-size:15px; font-weight:800; padding:14px 28px; cursor:pointer; box-shadow:0 4px 20px rgba(0,242,254,0.4);">
+        🔄 Qayta yoqish
+      </button>
+    </div>
+  `;
+}
+
 // Joylashuvimga qaytish
 function recenterUser() {
   setFollowUser(true);
@@ -1434,6 +1728,59 @@ window.addEventListener('DOMContentLoaded', () => {
         audio.playFile('slowdown.mp3');
         audio.playOverSpeedAlarm();
       }, 13200);
+    });
+  }
+
+  // ============================================================
+  // 📌 SUZUVCHI MINI-OYNA (PICTURE-IN-PICTURE) VA YOPISH
+  // ============================================================
+  if (typeof PipManager !== 'undefined') {
+    PipManager.init();
+  }
+
+  const btnPip = document.getElementById('btn-pip');
+  if (btnPip) {
+    btnPip.addEventListener('click', () => {
+      PipManager.requestPip();
+    });
+  }
+
+  const btnPipBottom = document.getElementById('btn-pip-bottom');
+  if (btnPipBottom) {
+    btnPipBottom.addEventListener('click', () => {
+      PipManager.requestPip();
+    });
+  }
+
+  // Ilovani To'xtatish va Yopish
+  const exitModal = document.getElementById('exit-modal');
+  const btnAppClose = document.getElementById('btn-app-close');
+  const btnCancelExit = document.getElementById('btn-cancel-exit');
+  const btnConfirmExit = document.getElementById('btn-confirm-exit');
+
+  if (btnAppClose && exitModal) {
+    btnAppClose.addEventListener('click', () => {
+      exitModal.classList.remove('hidden');
+    });
+  }
+
+  if (btnCancelExit && exitModal) {
+    btnCancelExit.addEventListener('click', () => {
+      exitModal.classList.add('hidden');
+    });
+  }
+
+  if (exitModal) {
+    exitModal.addEventListener('click', (e) => {
+      if (e.target === exitModal) {
+        exitModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (btnConfirmExit) {
+    btnConfirmExit.addEventListener('click', () => {
+      stopAndExitApp();
     });
   }
 
