@@ -9,9 +9,15 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23070a10' stroke='%2300f2fe' stroke-width='4'/><path d='M50 15 L78 28 V52 C78 70 66 84 50 90 C34 84 22 70 22 52 V28 Z' fill='%230f172a' stroke='%2300f2fe' stroke-width='3'/><path d='M50 25 L68 34 V52 C68 64 60 74 50 80 C40 74 32 64 32 52 V34 Z' fill='%2300f2fe'/><circle cx='50' cy='52' r='8' fill='%23070a10'/></svg>",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
