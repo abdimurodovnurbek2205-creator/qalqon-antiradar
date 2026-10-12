@@ -606,6 +606,8 @@ class AudioCore {
       }, 350);
     }
   }
+}
+
 // ============================================================
 // ⚡ EKRAN DOIMO YONIQ VA ORQA FONDA ISHLASH (WAKE LOCK ENGINE)
 // ============================================================
@@ -975,6 +977,7 @@ function updateRadarState() {
 
   // Oldindagi kameralarni tekshirish
   const alerts = engine.check(currentPosition);
+  const topAlert = alerts.length > 0 ? alerts[0] : null;
 
   const speedCluster = document.getElementById('speed-cluster');
   const alertBox = document.getElementById('active-alert-box');
@@ -983,8 +986,7 @@ function updateRadarState() {
   const limitSign = document.getElementById('speed-limit-sign');
   const fineBadge = document.getElementById('fine-status-badge');
 
-  if (alerts.length > 0) {
-    const topAlert = alerts[0];
+  if (topAlert) {
     const cam = topAlert.camera;
 
     limitSign.textContent = cam.speedLimit || '—';
