@@ -990,57 +990,6 @@ function updateNearbyCamsList() {
   }).join('');
 }
 
-// ---------------- 🚗 YO'LDA YURISHNI SINASH (ROAD TEST DRIVE) ----------------
-// Foydalanuvchi joylashgan yo'l (M37 / Romitan / Buxoro aylanma) bo'ylab maxsus strelkani harakatlantirish
-function toggleTestDrive() {
-  const btn = document.getElementById('btn-test-drive');
-  audio.unlock();
-
-  if (isTestDriveActive) {
-    isTestDriveActive = false;
-    clearInterval(testDriveTimer);
-    btn.innerHTML = '<span>🚗</span> Yo\'lda sinash';
-    btn.classList.remove('active');
-    currentPosition.speed = 0;
-    updateRadarState();
-    return;
-  }
-
-  isTestDriveActive = true;
-  btn.innerHTML = '<span>⏹</span> To\'xtatish';
-  btn.classList.add('active');
-
-  // Samarqand shahri: Temirchilar ko'chasidan Registon ko'chasi bo'ylab Lochin 60 tomon yurish
-  const roadWaypoints = [
-    { lat: 39.6588, lng: 66.9615, heading: 105, speed: 45 },
-    { lat: 39.6580, lng: 66.9655, heading: 105, speed: 55 },
-    { lat: 39.6568, lng: 66.9695, heading: 110, speed: 64 }, // Lochin 60 ga 400m qoldi
-    { lat: 39.6558, lng: 66.9725, heading: 115, speed: 72 }, // Tezlik oshgan (Xavf ogohlantirishi!)
-    { lat: 39.6548, lng: 66.9752, heading: 115, speed: 66 }, // Lochin 60 kamerasi to'g'risida
-    { lat: 39.6538, lng: 66.9785, heading: 115, speed: 58 }, // Kameradan o'tildi (Chime)
-    { lat: 39.6530, lng: 66.9820, heading: 110, speed: 50 }
-  ];
-
-  let step = 0;
-  // Har 1.8 soniyada yo'l bo'ylab strelka oldinga siljiydi
-  testDriveTimer = setInterval(() => {
-    if (step >= roadWaypoints.length) step = 0;
-    const pt = roadWaypoints[step];
-
-    currentPosition.lat = pt.lat;
-    currentPosition.lng = pt.lng;
-    currentPosition.heading = pt.heading;
-    currentPosition.speed = pt.speed;
-
-    if (map && followUser) {
-      map.panTo([pt.lat, pt.lng], { animate: true, duration: 1.2 });
-    }
-
-    updateRadarState();
-    step++;
-  }, 1800);
-}
-
 // Joylashuvimga qaytish
 function recenterUser() {
   setFollowUser(true);
@@ -1399,7 +1348,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // Tugmalar
   document.getElementById('btn-layer').addEventListener('click', cycleMapLayer);
   document.getElementById('btn-recenter').addEventListener('click', recenterUser);
-  document.getElementById('btn-test-drive').addEventListener('click', toggleTestDrive);
   document.getElementById('btn-follow-toggle').addEventListener('click', () => {
     setFollowUser(!followUser);
     if (followUser) recenterUser();
