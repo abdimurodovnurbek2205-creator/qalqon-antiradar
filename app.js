@@ -1585,37 +1585,75 @@ const PipManager = {
 
 // Ilovani butunlay to'xtatish va yopish
 function stopAndExitApp() {
-  if (typeof WakeLockEngine !== 'undefined') WakeLockEngine.release();
-  if (PipManager) PipManager.exit();
-  if (watchId !== null && navigator.geolocation) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
+  console.log("🛑 Qalqon Antiradar to'xtatilmoqda...");
+
+  try {
+    if (typeof WakeLockEngine !== 'undefined') WakeLockEngine.release();
+  } catch (err) {
+    console.warn("WakeLock to'xtatishda xatolik:", err);
   }
-  audio.stopAll();
-  audio.muted = true;
 
-  const exitModal = document.getElementById('exit-modal');
-  if (exitModal) exitModal.classList.add('hidden');
+  try {
+    if (typeof PipManager !== 'undefined') PipManager.exit();
+  } catch (err) {
+    console.warn("PiP to'xtatishda xatolik:", err);
+  }
 
-  updateGpsStatus("Radar to'xtatildi (Chiqildi)", false);
+  try {
+    if (typeof FloatingWidget !== 'undefined') FloatingWidget.hide();
+  } catch (err) {
+    console.warn("FloatingWidget to'xtatishda xatolik:", err);
+  }
+
+  try {
+    if (watchId !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+  } catch (err) {
+    console.warn("GPS watchId tozalashda xatolik:", err);
+  }
+
+  try {
+    if (typeof audio !== 'undefined') {
+      audio.stopAll();
+      audio.muted = true;
+    }
+  } catch (err) {
+    console.warn("Audio to'xtatishda xatolik:", err);
+  }
+
+  try {
+    const exitModal = document.getElementById('exit-modal');
+    if (exitModal) exitModal.classList.add('hidden');
+  } catch (err) {}
+
+  try {
+    updateGpsStatus("Radar to'xtatildi (Chiqildi)", false);
+  } catch (err) {}
 
   try {
     window.close();
-  } catch (e) {}
+  } catch (err) {}
 
-  document.body.innerHTML = `
-    <div style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#070b14; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
-      <div style="font-size:64px; margin-bottom:16px;">🛡️</div>
-      <h2 style="color:#00f2fe; margin-bottom:10px;">QALQON ANTIRADAR TO'XTATILDI</h2>
-      <p style="color:#94a3b8; max-width:380px; line-height:1.6; margin-bottom:28px;">
-        Radar monitoringi va audio ogohlantirishlar to‘xtatildi. Safaringiz bexatar bo‘lsin!
-      </p>
-      <button onclick="window.location.reload()" style="background:linear-gradient(135deg, #00f2fe, #2563eb); border:none; border-radius:12px; color:#030712; font-size:15px; font-weight:800; padding:14px 28px; cursor:pointer; box-shadow:0 4px 20px rgba(0,242,254,0.4);">
-        🔄 Qayta yoqish
-      </button>
-    </div>
-  `;
+  try {
+    document.body.innerHTML = `
+      <div style="min-height:100vh; height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#070b14; color:#fff; font-family:sans-serif; text-align:center; padding:24px; box-sizing:border-box;">
+        <div style="font-size:72px; margin-bottom:16px;">🛑</div>
+        <h2 style="color:#00f2fe; margin-bottom:12px; font-size:24px; font-weight:800; letter-spacing:0.5px;">QALQON ANTIRADAR TO'XTATILDI</h2>
+        <p style="color:#94a3b8; max-width:400px; line-height:1.6; font-size:14px; margin-bottom:32px;">
+          Radar monitoringi, GPS kuzatuv va audio ogohlantirishlar to‘liq o‘chirildi. Safaringiz bexatar bo‘lsin!
+        </p>
+        <button type="button" onclick="window.location.reload()" style="background:linear-gradient(135deg, #00f2fe, #2563eb); border:none; border-radius:14px; color:#030712; font-size:16px; font-weight:800; padding:16px 36px; cursor:pointer; box-shadow:0 6px 24px rgba(0,242,254,0.45); -webkit-tap-highlight-color:transparent; user-select:none; touch-action:manipulation;">
+          🔄 Qayta yoqish
+        </button>
+      </div>
+    `;
+  } catch (err) {
+    console.error("Chiqish ekranini chizishda xatolik:", err);
+  }
 }
+window.stopAndExitApp = stopAndExitApp;
 
 // Joylashuvimga qaytish
 function recenterUser() {
@@ -2115,30 +2153,51 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnCancelExit = document.getElementById('btn-cancel-exit');
   const btnConfirmExit = document.getElementById('btn-confirm-exit');
 
-  if (btnAppClose && exitModal) {
-    btnAppClose.addEventListener('click', () => {
-      exitModal.classList.remove('hidden');
-    });
+  const openExitModal = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (exitModal) exitModal.classList.remove('hidden');
+  };
+
+  const closeExitModal = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (exitModal) exitModal.classList.add('hidden');
+  };
+
+  const confirmExitAction = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    stopAndExitApp();
+  };
+
+  if (btnAppClose) {
+    btnAppClose.addEventListener('click', openExitModal);
+    btnAppClose.addEventListener('touchend', openExitModal, { passive: false });
   }
 
-  if (btnCancelExit && exitModal) {
-    btnCancelExit.addEventListener('click', () => {
-      exitModal.classList.add('hidden');
-    });
+  if (btnCancelExit) {
+    btnCancelExit.addEventListener('click', closeExitModal);
+    btnCancelExit.addEventListener('touchend', closeExitModal, { passive: false });
   }
 
   if (exitModal) {
     exitModal.addEventListener('click', (e) => {
       if (e.target === exitModal) {
-        exitModal.classList.add('hidden');
+        closeExitModal(e);
       }
     });
   }
 
   if (btnConfirmExit) {
-    btnConfirmExit.addEventListener('click', () => {
-      stopAndExitApp();
-    });
+    btnConfirmExit.addEventListener('click', confirmExitAction);
+    btnConfirmExit.addEventListener('touchend', confirmExitAction, { passive: false });
   }
 
   // Ekran avtomatik o‘chib qolmasligi va doimo yoniq turishi (WakeLock)
