@@ -1092,8 +1092,11 @@ function toggleFullscreen() {
 // Sozlamalar oynasi
 function toggleSettings() {
   const drawer = document.getElementById('settings-drawer');
+  const backdrop = document.getElementById('settings-backdrop');
   if (drawer) {
+    const willOpen = drawer.classList.contains('hidden');
     drawer.classList.toggle('hidden');
+    if (backdrop) backdrop.classList.toggle('hidden', !willOpen);
   }
 }
 
@@ -1358,10 +1361,16 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnHudMirror = document.getElementById('btn-hud-mirror');
   if (btnHudMirror) btnHudMirror.addEventListener('click', toggleHudMirror);
 
-  // ESC tugmasi bosilganda HUD rejimini yopish
+  // ESC tugmasi bosilganda HUD va Sozlamalarni yopish
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isHudActive) {
-      closeHud();
+    if (e.key === 'Escape') {
+      const drawer = document.getElementById('settings-drawer');
+      if (drawer && !drawer.classList.contains('hidden')) {
+        toggleSettings();
+      }
+      if (isHudActive) {
+        closeHud();
+      }
     }
   });
   document.getElementById('btn-mute').addEventListener('click', toggleMute);
@@ -1372,6 +1381,8 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnSettings) btnSettings.addEventListener('click', toggleSettings);
   const btnCloseSettings = document.getElementById('btn-close-settings');
   if (btnCloseSettings) btnCloseSettings.addEventListener('click', toggleSettings);
+  const settingsBackdrop = document.getElementById('settings-backdrop');
+  if (settingsBackdrop) settingsBackdrop.addEventListener('click', toggleSettings);
 
   const selMap = document.getElementById('setting-map-layer');
   if (selMap) {

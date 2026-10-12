@@ -721,13 +721,16 @@ body.hud-mode .hud-screen {
   position: fixed;
   top: 0;
   right: 0;
-  width: 320px;
+  width: 330px;
+  max-width: 90vw;
   height: 100vh;
-  background: rgba(13, 19, 31, 0.97);
-  backdrop-filter: blur(24px);
+  height: 100dvh;
+  background: rgba(13, 19, 31, 0.98);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   border-left: 1px solid var(--border-subtle);
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.8);
-  z-index: 2000;
+  box-shadow: -10px 0 50px rgba(0, 0, 0, 0.85);
+  z-index: 10500;
   display: flex;
   flex-direction: column;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -735,6 +738,22 @@ body.hud-mode .hud-screen {
 
 .settings-drawer.hidden {
   transform: translateX(100%);
+  pointer-events: none;
+}
+
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 10400;
+  transition: opacity 0.3s ease;
+}
+
+.settings-backdrop.hidden {
+  display: none !important;
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -1254,49 +1273,75 @@ body.hud-mode .hud-screen {
     padding: 6px 10px;
     height: 52px;
     box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .logo-area {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logo-text h1 {
+    font-size: 13px;
   }
 
   .logo-text span {
     display: none;
   }
 
-  .logo-text h1 {
-    font-size: 14px;
-  }
-
+  /* GPS matni telefonda yashiriladi (chunki pastki panelda lokatsiya to'liq bor) */
   .gps-live-indicator {
-    padding: 4px 8px;
-    font-size: 10px;
+    display: none !important;
   }
 
   /* Header tugmalari telefonda ixcham, siqilmasligi uchun */
   .header-actions {
-    gap: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   .btn-icon {
-    padding: 6px;
-    min-width: 34px;
-    min-height: 34px;
-    font-size: 11px;
-    border-radius: 8px;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 0 !important; /* Faqat ikonka ko'rinadi */
+    flex-shrink: 0;
   }
 
-  /* Faqat ikonka ko'rinadi, uzun matn yashiriladi */
   .btn-icon span {
-    font-size: 14px;
-    margin: 0;
+    font-size: 16px !important;
+    margin: 0 !important;
+    line-height: 1;
   }
 
-  #btn-report-cam, #btn-layer, #btn-recenter, #btn-hud, #btn-mute {
-    font-size: 0; /* Matnni yashirish */
+  #btn-settings-toggle {
+    background: rgba(0, 242, 254, 0.18) !important;
+    border-color: rgba(0, 242, 254, 0.5) !important;
+    color: var(--accent-cyan) !important;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.25) !important;
   }
 
-  #btn-report-cam span, #btn-layer span, #btn-recenter span, #btn-hud span, #btn-mute span {
-    font-size: 15px;
+  .settings-drawer {
+    width: 320px;
+    max-width: 85vw;
   }
 
   /* Cockpit HUD klasteri telefonda */
@@ -1407,6 +1452,46 @@ body.hud-mode .hud-screen {
     right: 12px;
     padding: 8px 14px;
     font-size: 11px;
+  }
+}
+
+/* Kichik ekranli smartfonlar (<= 480px) */
+@media (max-width: 480px) {
+  .logo-text {
+    display: none !important; /* faqat ixcham qalqon ikonkasi qoladi */
+  }
+
+  .header-actions {
+    gap: 4px;
+    width: auto;
+  }
+
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  .btn-icon span {
+    font-size: 15px !important;
+  }
+
+  .settings-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-left: none;
+  }
+
+  .settings-body {
+    padding: 16px;
+    gap: 16px;
+    padding-bottom: 70px;
+  }
+
+  .setting-item select {
+    padding: 12px;
+    font-size: 14px;
   }
 }
 
