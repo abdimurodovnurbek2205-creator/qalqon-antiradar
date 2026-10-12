@@ -3,7 +3,7 @@
  * Barcha radarlar, audio ovozlar, xarita va interfeysni internetsiz ishlashi uchun keshlaydi
  */
 
-const CACHE_NAME = 'qalqon-v2-1014';
+const CACHE_NAME = 'qalqon-v2-1015';
 const STATIC_ASSETS = [
   './',
   './index.html',
