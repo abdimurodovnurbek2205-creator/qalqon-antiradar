@@ -1296,7 +1296,8 @@ window.addEventListener('DOMContentLoaded', () => {
   let selectedReportSpeed = 60;
 
   if (btnReportCam && reportModal) {
-    btnReportCam.addEventListener('click', () => {
+    btnReportCam.addEventListener('click', (e) => {
+      e.preventDefault();
       reportModal.classList.remove('hidden');
       if (reportStatusMsg) reportStatusMsg.innerHTML = '';
     });
@@ -1305,6 +1306,14 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnCloseReport && reportModal) {
     btnCloseReport.addEventListener('click', () => {
       reportModal.classList.add('hidden');
+    });
+  }
+
+  if (reportModal) {
+    reportModal.addEventListener('click', (e) => {
+      if (e.target === reportModal) {
+        reportModal.classList.add('hidden');
+      }
     });
   }
 
