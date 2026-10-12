@@ -10,8 +10,9 @@ const PENDING_REPORTS_KEY = 'qalqon_pending_reports';
 
 // Standart konfiguratsiya (Settings orqali o'zgartirish mumkin)
 const DEFAULT_SUPABASE_URL = 'https://khfpsjlelicajcycjrag.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_nZVnzmtSS5MtNurB0kCWDQ_FrPd5oa7';
 let currentSupabaseUrl = localStorage.getItem(SUPABASE_STORAGE_KEY_URL) || DEFAULT_SUPABASE_URL;
-let currentSupabaseKey = localStorage.getItem(SUPABASE_STORAGE_KEY_KEY) || '';
+let currentSupabaseKey = localStorage.getItem(SUPABASE_STORAGE_KEY_KEY) || DEFAULT_SUPABASE_KEY;
 
 let supabaseClient = null;
 let realtimeChannel = null;
@@ -68,11 +69,12 @@ async function fetchCamerasFromCloud() {
   }
 
   try {
-    // 1. Asosiy statsionar radarlar
+    // 1. Asosiy statsionar radarlar (barcha 1000+ radarni to'liq olish)
     const { data: mainCams, error: mainErr } = await supabaseClient
       .from('speed_cameras')
       .select('*')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .range(0, 2500);
 
     if (mainErr) throw mainErr;
 
