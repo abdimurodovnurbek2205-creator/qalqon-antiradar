@@ -1073,3 +1073,411 @@ body.hud-mode .hud-screen {
   cursor: not-allowed;
 }
 
+/* ============================================================
+   SUZUVCHI MARKAZGA QAYTISH FAB TUGMASI (FOLLOW RECENTER)
+   ============================================================ */
+.floating-recenter-btn {
+  position: absolute;
+  bottom: 74px;
+  right: 16px;
+  z-index: 999;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(7, 10, 16, 0.98));
+  border: 1.5px solid var(--accent-cyan);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(0, 242, 254, 0.4);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+  animation: pulseFab 1.8s infinite alternate;
+}
+
+@keyframes pulseFab {
+  from { box-shadow: 0 0 10px rgba(0, 242, 254, 0.3); transform: scale(1); }
+  to { box-shadow: 0 0 22px rgba(0, 242, 254, 0.65); transform: scale(1.03); }
+}
+
+.floating-recenter-btn:active {
+  transform: scale(0.96);
+}
+
+.floating-recenter-btn.hidden {
+  display: none !important;
+}
+
+/* ============================================================
+   GPS VA TOVUSH RUXSATINI SO'RASH MODALI (FIRST VISIT)
+   ============================================================ */
+.gps-permission-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(4, 7, 14, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeInModal 0.3s ease;
+}
+
+.gps-permission-overlay.hidden {
+  display: none !important;
+}
+
+.gps-permission-box {
+  background: radial-gradient(circle at top, #162035 0%, #0a0e1a 100%);
+  border: 1.5px solid rgba(0, 242, 254, 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 242, 254, 0.25);
+  border-radius: 24px;
+  max-width: 440px;
+  width: 100%;
+  padding: 28px 22px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.gps-icon-glow {
+  font-size: 48px;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: floatSat 2.5s infinite ease-in-out;
+}
+
+@keyframes floatSat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.gps-permission-box h2 {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #ffffff, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gps-modal-sub {
+  margin: 0 0 20px 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.gps-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.feature-item .feat-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.feature-item strong {
+  display: block;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.feature-item span {
+  display: block;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.btn-primary-gps {
+  width: 100%;
+  background: linear-gradient(135deg, #00f2fe, #2563eb);
+  border: none;
+  border-radius: 16px;
+  color: #030712;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 6px 25px rgba(0, 242, 254, 0.45);
+  transition: all 0.25s ease;
+}
+
+.btn-primary-gps:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 242, 254, 0.65);
+}
+
+.btn-primary-gps:active {
+  transform: scale(0.97);
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN: TELEFONLAR (MOBILE PORTRAIT <= 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  header {
+    padding: 6px 10px;
+    height: 52px;
+    box-sizing: border-box;
+  }
+
+  .logo-text span {
+    display: none;
+  }
+
+  .logo-text h1 {
+    font-size: 14px;
+  }
+
+  .gps-live-indicator {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  /* Header tugmalari telefonda ixcham, siqilmasligi uchun */
+  .header-actions {
+    gap: 4px;
+  }
+
+  .btn-icon {
+    padding: 6px;
+    min-width: 34px;
+    min-height: 34px;
+    font-size: 11px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Faqat ikonka ko'rinadi, uzun matn yashiriladi */
+  .btn-icon span {
+    font-size: 14px;
+    margin: 0;
+  }
+
+  #btn-report-cam, #btn-layer, #btn-recenter, #btn-hud, #btn-mute {
+    font-size: 0; /* Matnni yashirish */
+  }
+
+  #btn-report-cam span, #btn-layer span, #btn-recenter span, #btn-hud span, #btn-mute span {
+    font-size: 15px;
+  }
+
+  /* Cockpit HUD klasteri telefonda */
+  .driver-hud-overlay {
+    top: 6px;
+    width: calc(100% - 16px);
+    max-width: 400px;
+  }
+
+  .speed-cluster-hud {
+    padding: 8px 12px;
+    gap: 8px;
+    border-radius: 16px;
+  }
+
+  .speed-num {
+    font-size: 46px;
+  }
+
+  .speed-unit {
+    font-size: 10px;
+  }
+
+  .limit-sign {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .status-box {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .fine-pill {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .bearing-info {
+    font-size: 10px;
+  }
+
+  /* Faol radar ogohlantirish kartasi */
+  .active-warning-card {
+    padding: 10px 14px;
+    border-radius: 16px;
+  }
+
+  .cam-title-box h3 {
+    font-size: 14px;
+  }
+
+  .cam-title-box p {
+    font-size: 11px;
+  }
+
+  .countdown-dist {
+    font-size: 22px;
+  }
+
+  /* Oldindagi radarlar vidjeti - telefonda pastda ixcham turadi */
+  .upcoming-floating-card {
+    bottom: 56px;
+    right: 8px;
+    left: 8px;
+    max-width: none;
+    max-height: 90px;
+    padding: 8px 12px;
+    border-radius: 14px;
+  }
+
+  .upcoming-title {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .upcoming-mini-list {
+    max-height: 55px;
+  }
+
+  /* Pastki panel */
+  .bottom-panel {
+    padding: 6px 10px;
+    height: auto;
+    min-height: 44px;
+  }
+
+  .sim-controls {
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: space-between;
+  }
+
+  #user-coords-text {
+    font-size: 11px;
+  }
+
+  .sim-btn {
+    padding: 5px 8px;
+    font-size: 10px;
+    border-radius: 8px;
+  }
+
+  .floating-recenter-btn {
+    bottom: 150px;
+    right: 12px;
+    padding: 8px 14px;
+    font-size: 11px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN: PLANSHETLAR VA LANDSCAPE (GORIZONTAL REJIM)
+   Mashina planshetlari (Android Head Unit) yoki gorizontal ushlagich
+   ============================================================ */
+@media (min-width: 769px) and (max-width: 1280px) {
+  .speed-num {
+    font-size: 58px;
+  }
+
+  .driver-hud-overlay {
+    max-width: 500px;
+  }
+
+  .upcoming-floating-card {
+    max-width: 320px;
+    bottom: 64px;
+    right: 16px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  header {
+    height: 44px;
+    padding: 4px 12px;
+  }
+
+  .logo-text h1 {
+    font-size: 13px;
+  }
+
+  /* Gorizontal rejimda spidometr chap burchakka suriladi, oldindagi yo'l ko'rinadi */
+  .driver-hud-overlay {
+    top: 48px;
+    left: 12px;
+    transform: none;
+    width: auto;
+    max-width: 340px;
+  }
+
+  .speed-cluster-hud {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .speed-num {
+    font-size: 38px;
+  }
+
+  .limit-sign {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
+
+  /* Radar ogohlantirish o'ng tomonga o'tadi */
+  .active-warning-card {
+    position: fixed;
+    top: 48px;
+    right: 12px;
+    width: 320px;
+    padding: 8px 12px;
+  }
+
+  .upcoming-floating-card {
+    display: none; /* Gorizontal haydashda ekranni to'sib qo'ymasligi uchun */
+  }
+
+  .bottom-panel {
+    padding: 4px 10px;
+    min-height: 38px;
+  }
+
+  .floating-recenter-btn {
+    bottom: 48px;
+    right: 12px;
+  }
+}
+
+

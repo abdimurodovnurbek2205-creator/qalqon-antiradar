@@ -724,6 +724,8 @@ function renderCamerasOnMap() {
 }
 
 // ---------------- HAQIQIY JONLI GPS LOKATSIYANI YOQISH ----------------
+let hasHadFirstGpsFix = false;
+
 function startLiveGps() {
   const regName = detectRegionName(currentPosition.lat, currentPosition.lng);
   updateGpsStatus(`GPS: ${regName} (Ulanmoqda...)`, false);
@@ -785,7 +787,12 @@ function startLiveGps() {
       document.getElementById('user-coords-text').textContent = 
         `${dynamicRegion} (${currentPosition.lat.toFixed(5)}, ${currentPosition.lng.toFixed(5)})`;
 
-      if (followUser && map) {
+      if (!hasHadFirstGpsFix) {
+        hasHadFirstGpsFix = true;
+        if (map) {
+          map.setView([currentPosition.lat, currentPosition.lng], 16);
+        }
+      } else if (followUser && map) {
         map.panTo([currentPosition.lat, currentPosition.lng], { animate: true });
       }
 
@@ -1042,19 +1049,42 @@ function recenterUser() {
   }
 }
 
+let autoFollowTimer = null;
+
 function setFollowUser(active) {
   followUser = active;
   const btnRecenter = document.getElementById('btn-recenter');
   const btnFollowToggle = document.getElementById('btn-follow-toggle');
+  const btnFloating = document.getElementById('btn-floating-recenter');
   
   if (btnRecenter) {
     btnRecenter.classList.toggle('active-glow', active);
   }
   if (btnFollowToggle) {
     btnFollowToggle.classList.toggle('active', active);
-    btnFollowToggle.innerHTML = active ? '<span>🧭</span> Avto-kuzatuv: Yoqiq' : '<span>✋</span> Avto-kuzatuv: O\'chiq';
+    btnFollowToggle.innerHTML = active ? '<span>🧭</span> Avto-kuzatuv: Yoqiq' : '<span>✋</span> Avto-kuzatuv: To\'xtatilgan';
+  }
+  if (btnFloating) {
+    btnFloating.classList.toggle('hidden', active);
+  }
+
+  if (active) {
+    if (autoFollowTimer) {
+      clearTimeout(autoFollowTimer);
+      autoFollowTimer = null;
+    }
+    if (map && currentPosition) {
+      map.panTo([currentPosition.lat, currentPosition.lng], { animate: true });
+    }
+  } else {
+    // Agar foydalanuvchi xaritani sursa, 8 soniyadan so'ng avtomatik yana mashinaga ergashadi!
+    if (autoFollowTimer) clearTimeout(autoFollowTimer);
+    autoFollowTimer = setTimeout(() => {
+      setFollowUser(true);
+    }, 8000);
   }
 }
+
 
 // HUD rejimini yoqish/o'chirish
 let isHudMirrorActive = false;
@@ -1121,7 +1151,6 @@ function toggleSettings() {
 // Initsializatsiya
 window.addEventListener('DOMContentLoaded', () => {
   initMap();
-  startLiveGps();
 
   // Foydalanuvchi ekranga bir marta tekkanda audioni faollashtirish
   const unlockEvents = ['touchstart', 'click', 'keydown'];
@@ -1130,6 +1159,66 @@ window.addEventListener('DOMContentLoaded', () => {
     unlockEvents.forEach(evt => window.removeEventListener(evt, onFirstInteraction));
   };
   unlockEvents.forEach(evt => window.addEventListener(evt, onFirstInteraction, { passive: true }));
+
+  // Xaritada erkin yurgandan so'ng markazga qaytish FAB tugmasi
+  const btnFloatingRecenter = document.getElementById('btn-floating-recenter');
+  if (btnFloatingRecenter) {
+    btnFloatingRecenter.addEventListener('click', () => {
+      setFollowUser(true);
+      recenterUser();
+    });
+  }
+
+  // ============================================================
+  // BIRINCHI KIRISHDA GPS VA OVOZ RUXSAT MODALI
+  // ============================================================
+  const gpsModal = document.getElementById('gps-permission-modal');
+  const btnGrantGps = document.getElementById('btn-grant-gps');
+  const isGpsPreviouslyGranted = localStorage.getItem('qalqon_gps_granted');
+
+  if (!isGpsPreviouslyGranted && gpsModal) {
+    gpsModal.classList.remove('hidden');
+  } else {
+    startLiveGps();
+  }
+
+  if (btnGrantGps) {
+    btnGrantGps.addEventListener('click', () => {
+      audio.unlock();
+      if (gpsModal) gpsModal.classList.add('hidden');
+      localStorage.setItem('qalqon_gps_granted', '1');
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const crd = pos.coords;
+            currentPosition.lat = crd.latitude;
+            currentPosition.lng = crd.longitude;
+            if (crd.heading !== null && !isNaN(crd.heading) && crd.heading >= 0) {
+              currentPosition.heading = Math.round(crd.heading);
+            }
+            hasHadFirstGpsFix = true;
+            if (map) {
+              map.setView([currentPosition.lat, currentPosition.lng], 16);
+            }
+            if (carMarker) {
+              carMarker.setLatLng([currentPosition.lat, currentPosition.lng]);
+            }
+            updateRadarState();
+            startLiveGps();
+            audio.playRadarAlertChime();
+          },
+          (err) => {
+            console.warn("GPS ruxsat berish xatosi:", err.message);
+            startLiveGps();
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      } else {
+        startLiveGps();
+      }
+    });
+  }
 
   // ============================================================
   // SUPABASE CLOUD VA RADARLAR BAZASINI YUKLASH

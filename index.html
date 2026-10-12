@@ -181,6 +181,12 @@
         </div>
       </div>
 
+      <!-- Suzuvchi Markazga Qaytish Tugmasi (Xarita qo'lda surilganda chiqadi) -->
+      <button id="btn-floating-recenter" class="floating-recenter-btn hidden" title="Mashina joylashuviga qaytish">
+        <span class="recenter-icon">🎯</span>
+        <span class="recenter-text">Mashinaga qaytish</span>
+      </button>
+
       <!-- Audio Faollashtirish Qalqoni (Avtomatik yoqiladi) -->
       <div id="audio-unlock-overlay" class="audio-prompt-pill">
         <span>🔊</span> Ovozli ogohlantirish tayyor. Ekranni bir marta bosing.
@@ -305,6 +311,45 @@
     </div>
   </div>
 
+  <!-- Dasturga Birinchi Kirishda GPS va Ovoz Ruxsati Modali -->
+  <div id="gps-permission-modal" class="gps-permission-overlay hidden">
+    <div class="gps-permission-box">
+      <div class="gps-icon-glow">🛰️</div>
+      <h2>QALQON ANTIRADAR</h2>
+      <p class="gps-modal-sub">
+        Yo‘lda radarlarni oldindan aniqlash, spidometr va o‘zbekcha ovozli ogohlantirish uchun joylashuv (GPS) va tovushga ruxsat bering.
+      </p>
+
+      <div class="gps-features-list">
+        <div class="feature-item">
+          <span class="feat-icon">⚡</span>
+          <div>
+            <strong>Jonli GPS Spidometr</strong>
+            <span>Haqiqiy harakat tezligi va yo‘nalish</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feat-icon">🦅</span>
+          <div>
+            <strong>1,014 ta radarlar bazasi</strong>
+            <span>Oflayn rejimda, internetsiz ham ishlaydi</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feat-icon">🔊</span>
+          <div>
+            <strong>Ovozli himoya (O‘zbekcha)</strong>
+            <span>Lochin, Uch oyoq, Kameralar va Jarimalardan ogohlantiradi</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-grant-gps" class="btn-primary-gps">
+        <span>🚀</span> RADAR VA GPS-NI YOQISH
+      </button>
+    </div>
+  </div>
+
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <!-- Supabase JS SDK & Cloud Client -->
@@ -312,5 +357,19 @@
   <script src="src/supabaseClient.js"></script>
   <!-- Application JS -->
   <script src="app.js"></script>
+
+  <!-- Offline PWA Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('✅ Qalqon Service Worker faol:', reg.scope);
+        }).catch((err) => {
+          console.warn('Service Worker ogohlantirish:', err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
+
