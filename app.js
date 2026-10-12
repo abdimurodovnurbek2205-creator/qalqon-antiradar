@@ -612,12 +612,11 @@ class AudioCore {
 const WakeLockEngine = {
   sentinel: null,
   isWanted: true,
-  fallbackVideo: null,
 
   async request() {
     this.isWanted = true;
 
-    // 1. Zamonaviy Screen Wake Lock API (Chrome, Safari 16.4+, Samsung Internet)
+    // Zamonaviy Screen Wake Lock API (Chrome, Safari 16.4+, Edge, Samsung Internet)
     if ('wakeLock' in navigator) {
       try {
         if (!this.sentinel || this.sentinel.released) {
@@ -629,32 +628,10 @@ const WakeLockEngine = {
           console.log('✅ Ekran doimo yoniq (WakeLock faol)');
         }
       } catch (err) {
-        console.warn('WakeLock xatosi:', err.message);
+        console.warn('WakeLock ogohlantirish:', err.message);
       }
     }
-
-    // 2. NoSleep video fallback (Barcha boshqa mobil brauzerlar uchun 100% kafolat)
-    this.startFallbackVideo();
     this.updateUi();
-  },
-
-  startFallbackVideo() {
-    if (!this.fallbackVideo) {
-      this.fallbackVideo = document.getElementById('wake-fallback-video');
-      if (this.fallbackVideo && !this.fallbackVideo.src && !this.fallbackVideo.srcObject) {
-        try {
-          const cvs = document.createElement('canvas');
-          cvs.width = 4;
-          cvs.height = 4;
-          if (cvs.captureStream) {
-            this.fallbackVideo.srcObject = cvs.captureStream(1);
-          }
-        } catch (e) {}
-      }
-    }
-    if (this.fallbackVideo) {
-      this.fallbackVideo.play().catch(() => {});
-    }
   },
 
   release() {
@@ -662,9 +639,6 @@ const WakeLockEngine = {
     if (this.sentinel) {
       this.sentinel.release().catch(() => {});
       this.sentinel = null;
-    }
-    if (this.fallbackVideo) {
-      this.fallbackVideo.pause();
     }
     this.updateUi();
   },
@@ -678,9 +652,7 @@ const WakeLockEngine = {
   },
 
   isActive() {
-    const isNativeActive = Boolean(this.sentinel && !this.sentinel.released);
-    const isVideoActive = Boolean(this.fallbackVideo && !this.fallbackVideo.paused);
-    return isNativeActive || isVideoActive;
+    return Boolean(this.sentinel && !this.sentinel.released);
   },
 
   updateUi() {
@@ -862,7 +834,7 @@ function startLiveGps() {
   if (typeof WakeLockEngine !== 'undefined') {
     WakeLockEngine.request();
   }
-  if (audio) {
+  if (audio && audio.unlocked) {
     audio.startBackgroundKeepAlive();
   }
 
@@ -1807,7 +1779,9 @@ window.addEventListener('DOMContentLoaded', () => {
     let cloudLoaded = false;
     if (window.QalqonCloud && window.QalqonCloud.isConfigured()) {
       try {
-        const cloudCams = await window.QalqonCloud.fetchCameras();
+        const cloudPromise = window.QalqonCloud.fetchCameras();
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Cloud timeout')), 2500));
+        const cloudCams = await Promise.race([cloudPromise, timeoutPromise]);
         if (Array.isArray(cloudCams) && cloudCams.length > 0) {
           speedCameras = cloudCams;
           engine.cameras = cloudCams;
@@ -1817,7 +1791,7 @@ window.addEventListener('DOMContentLoaded', () => {
           console.log(`✅ Supabase Cloud-dan ${cloudCams.length} ta radar yuklandi!`);
         }
       } catch (err) {
-        console.warn('Supabase cloud fetch failed, falling back:', err);
+        console.warn('Supabase cloud fetch failed or timed out, falling back:', err.message);
       }
     }
 
