@@ -791,15 +791,68 @@ const WakeLockEngine = {
 const engine = new RadarEngineCore(speedCameras);
 const audio = new AudioCore();
 
-// Boshlang'ich koordinatalar: Kompyuterning aniq joylashuvi (Samarqand shahri, Temirchilar ko'chasi)
+// ---------------- LOKATSIYANI SAQLASH VA BIR ZUMDA TIKLASH ----------------
+const STORAGE_LAST_LAT = 'qalqon_last_lat';
+const STORAGE_LAST_LNG = 'qalqon_last_lng';
+const STORAGE_LAST_HEADING = 'qalqon_last_heading';
+
+function getSavedUserPosition() {
+  try {
+    const lat = parseFloat(localStorage.getItem(STORAGE_LAST_LAT));
+    const lng = parseFloat(localStorage.getItem(STORAGE_LAST_LNG));
+    const heading = parseFloat(localStorage.getItem(STORAGE_LAST_HEADING));
+    if (!isNaN(lat) && !isNaN(lng) && lat >= 36.0 && lat <= 46.5 && lng >= 55.0 && lng <= 74.5) {
+      return {
+        lat,
+        lng,
+        heading: (!isNaN(heading) && heading >= 0) ? heading : 0
+      };
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveUserPosition(lat, lng, heading) {
+  try {
+    if (lat >= 36.0 && lat <= 46.5 && lng >= 55.0 && lng <= 74.5) {
+      localStorage.setItem(STORAGE_LAST_LAT, String(lat));
+      localStorage.setItem(STORAGE_LAST_LNG, String(lng));
+      if (heading !== null && !isNaN(heading) && heading >= 0) {
+        localStorage.setItem(STORAGE_LAST_HEADING, String(Math.round(heading)));
+      }
+    }
+  } catch (e) {}
+}
+
+const savedInitPos = getSavedUserPosition();
+let hasHadFirstGpsFix = Boolean(savedInitPos);
+
+// Boshlang'ich koordinatalar: Avvalgi safardan saqlangan bo'lsa darhol o'sha lokatsiyadan ochiladi!
 let currentPosition = {
-  lat: 39.6588,
-  lng: 66.9615,
+  lat: savedInitPos ? savedInitPos.lat : 41.311081,
+  lng: savedInitPos ? savedInitPos.lng : 69.240562,
   speed: 0,
-  heading: 105,
-  accuracy: 10,
+  heading: savedInitPos ? savedInitPos.heading : 0,
+  accuracy: savedInitPos ? 10 : 999,
   timestamp: Date.now()
 };
+
+// Yangi foydalanuvchi birinchi marta kirganda IP orqali tezkor (150ms) aniqlash
+function fetchFastIpLocation() {
+  if (hasHadFirstGpsFix) return;
+  fetch('https://get.geojs.io/v1/ip/geo.json')
+    .then(r => r.json())
+    .then(data => {
+      if (!hasHadFirstGpsFix && data && data.latitude && data.longitude) {
+        const ipLat = parseFloat(data.latitude);
+        const ipLng = parseFloat(data.longitude);
+        if (ipLat >= 36.0 && ipLat <= 46.5 && ipLng >= 55.0 && ipLng <= 74.5) {
+          applyGpsUpdate(ipLat, ipLng, 0, 0, 500, true);
+        }
+      }
+    })
+    .catch(() => {});
+}
 
 let previousPosition = null;
 let map = null;
@@ -819,10 +872,12 @@ function initMap() {
   if (!mapEl) return;
 
   try {
+    const initialZoom = hasHadFirstGpsFix ? 16 : 14;
+
     map = L.map('map', {
       zoomControl: false,
       attributionControl: false
-    }).setView([currentPosition.lat, currentPosition.lng], 16);
+    }).setView([currentPosition.lat, currentPosition.lng], initialZoom);
 
     // Xarita qatlamini o'rnatish
     setMapLayer(currentLayerType);
@@ -852,7 +907,11 @@ function initMap() {
       iconAnchor: [30, 30]
     });
 
-    carMarker = L.marker([currentPosition.lat, currentPosition.lng], { icon: carIcon, zIndexOffset: 1000 }).addTo(map);
+    carMarker = L.marker([currentPosition.lat, currentPosition.lng], {
+      icon: carIcon,
+      zIndexOffset: 1000,
+      opacity: hasHadFirstGpsFix ? 1 : 0 // Haqiqiy lokatsiya aniqlanmaguncha soxta strelka ko'rsatilmaydi
+    }).addTo(map);
 
     // Barcha kameralarni chizish
     renderCamerasOnMap();
@@ -1023,8 +1082,48 @@ function renderCamerasOnMap() {
   });
 }
 
-// ---------------- HAQIQIY JONLI GPS LOKATSIYANI YOQISH ----------------
-let hasHadFirstGpsFix = false;
+// ---------------- HAQIQIY JONLI GPS VA PROFESSIONAL LOKATSIYA SIKLI ----------------
+function applyGpsUpdate(newLat, newLng, heading, speed = 0, accuracy = 10, isInitialFastFix = false) {
+  const isFirstFix = !hasHadFirstGpsFix;
+  hasHadFirstGpsFix = true;
+
+  currentPosition.lat = newLat;
+  currentPosition.lng = newLng;
+  if (speed !== null && !isNaN(speed) && speed >= 0) {
+    currentPosition.speed = speed;
+  }
+  if (heading !== null && !isNaN(heading) && heading >= 0) {
+    currentPosition.heading = Math.round(heading);
+  }
+  currentPosition.accuracy = Math.round(accuracy || 10);
+  currentPosition.timestamp = Date.now();
+
+  saveUserPosition(newLat, newLng, currentPosition.heading);
+
+  if (carMarker) {
+    carMarker.setLatLng([newLat, newLng]);
+    carMarker.setOpacity(1);
+    const carDiv = document.getElementById('car-marker');
+    if (carDiv) carDiv.style.transform = `rotate(${currentPosition.heading}deg)`;
+  }
+
+  if (map) {
+    if (isFirstFix || isInitialFastFix) {
+      map.setView([newLat, newLng], 16, { animate: !isFirstFix });
+    } else if (followUser) {
+      map.panTo([newLat, newLng], { animate: true });
+    }
+  }
+
+  const dynamicRegion = detectRegionName(newLat, newLng);
+  updateGpsStatus(`GPS: ${dynamicRegion} (Jonli ±${currentPosition.accuracy}m)`, true);
+  const coordsEl = document.getElementById('user-coords-text');
+  if (coordsEl) {
+    coordsEl.textContent = `${dynamicRegion} (${newLat.toFixed(5)}, ${newLng.toFixed(5)})`;
+  }
+
+  updateRadarState();
+}
 
 function startLiveGps() {
   if (typeof WakeLockEngine !== 'undefined') {
@@ -1034,13 +1133,35 @@ function startLiveGps() {
     audio.startBackgroundKeepAlive();
   }
 
-  const regName = detectRegionName(currentPosition.lat, currentPosition.lng);
-  updateGpsStatus(`GPS: ${regName} (Ulanmoqda...)`, false);
+  if (hasHadFirstGpsFix) {
+    const regName = detectRegionName(currentPosition.lat, currentPosition.lng);
+    updateGpsStatus(`GPS: ${regName} (Jonli)`, true);
+  } else {
+    updateGpsStatus(`GPS: Joylashuv aniqlanmoqda...`, false);
+    fetchFastIpLocation();
+  }
 
   // 1. Haqiqiy jonli Geolocation Kuzatuvi
   if (!navigator.geolocation) {
     updateGpsStatus("GPS qo'llab-quvvatlanmaydi", false);
     return;
+  }
+
+  // 1-bosqich: Android OS / Brauzer keshidagi so'nggi tarmoq lokatsiyasini (Cell tower / Wi-Fi) bir zumda (30-80ms) olish
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const crd = pos.coords;
+      if (crd && crd.latitude && crd.longitude) {
+        applyGpsUpdate(crd.latitude, crd.longitude, crd.heading, crd.speed ? Math.round(crd.speed * 3.6) : 0, crd.accuracy, true);
+      }
+    },
+    () => {},
+    { enableHighAccuracy: false, timeout: 2500, maximumAge: 600000 }
+  );
+
+  // 2-bosqich: Uzluksiz yuqori aniqlikdagi GPS sun'iy yo'ldosh kuzatuvi
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
   }
 
   watchId = navigator.geolocation.watchPosition(
@@ -1082,36 +1203,16 @@ function startLiveGps() {
         timestamp: currentPosition.timestamp
       };
 
-      currentPosition.lat = newLat;
-      currentPosition.lng = newLng;
-      currentPosition.speed = calculatedSpeed;
-      currentPosition.heading = calculatedHeading;
-      currentPosition.accuracy = Math.round(crd.accuracy || 10);
-      currentPosition.timestamp = now;
-
-      const dynamicRegion = detectRegionName(newLat, newLng);
-      updateGpsStatus(`GPS: ${dynamicRegion} (Jonli ±${currentPosition.accuracy}m)`, true);
-      document.getElementById('user-coords-text').textContent = 
-        `${dynamicRegion} (${currentPosition.lat.toFixed(5)}, ${currentPosition.lng.toFixed(5)})`;
-
-      if (!hasHadFirstGpsFix) {
-        hasHadFirstGpsFix = true;
-        if (map) {
-          map.setView([currentPosition.lat, currentPosition.lng], 16);
-        }
-      } else if (followUser && map) {
-        map.panTo([currentPosition.lat, currentPosition.lng], { animate: true });
-      }
-
-      updateRadarState();
+      applyGpsUpdate(newLat, newLng, calculatedHeading, calculatedSpeed, crd.accuracy || 10, false);
     },
     (err) => {
       console.warn("GPS kutish holati:", err.message);
-      const dynamicRegion = detectRegionName(currentPosition.lat, currentPosition.lng);
-      updateGpsStatus(`GPS: ${dynamicRegion} (Lokatsiya faol)`, true);
-      document.getElementById('user-coords-text').textContent = 
-        `${dynamicRegion} (${currentPosition.lat.toFixed(5)}, ${currentPosition.lng.toFixed(5)})`;
-      updateRadarState();
+      if (hasHadFirstGpsFix) {
+        const dynamicRegion = detectRegionName(currentPosition.lat, currentPosition.lng);
+        updateGpsStatus(`GPS: ${dynamicRegion} (Lokatsiya faol)`, true);
+      } else {
+        updateGpsStatus(`GPS: Joylashuv kutilmoqda...`, false);
+      }
     },
     {
       enableHighAccuracy: true,
@@ -2072,6 +2173,18 @@ window.stopAndExitApp = stopAndExitApp;
 // Joylashuvimga qaytish
 function recenterUser() {
   setFollowUser(true);
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const crd = pos.coords;
+        if (crd && crd.latitude && crd.longitude) {
+          applyGpsUpdate(crd.latitude, crd.longitude, crd.heading, crd.speed ? Math.round(crd.speed * 3.6) : 0, crd.accuracy, true);
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 4000, maximumAge: 3000 }
+    );
+  }
   if (map) {
     map.flyTo([currentPosition.lat, currentPosition.lng], 16, { animate: true, duration: 1 });
   }
@@ -2215,6 +2328,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (!isGpsPreviouslyGranted && gpsModal) {
     gpsModal.classList.remove('hidden');
+    // Yangi foydalanuvchi modalni o'qiyotgan paytda orqa fonda tezkor lokatsiyani so'rab turish (Samarqand ko'rinib qolmasligi uchun)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const crd = pos.coords;
+          if (crd && crd.latitude && crd.longitude) {
+            applyGpsUpdate(crd.latitude, crd.longitude, crd.heading, 0, crd.accuracy, true);
+          }
+        },
+        () => {
+          fetchFastIpLocation();
+        },
+        { enableHighAccuracy: false, timeout: 2500, maximumAge: 600000 }
+      );
+    } else {
+      fetchFastIpLocation();
+    }
   } else {
     startLiveGps();
     // Darhol orqa fon va qulf ekrani oqimini ishga tushirishga urinish (TWA / APK ichida avtomatik ruxsat beriladi)
@@ -2231,34 +2361,21 @@ window.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('qalqon_gps_granted', '1');
 
       if (navigator.geolocation) {
+        // 1. Zudlik bilan (50ms) tezkor kesh/tarmoq lokatsiyasini qo'llash
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const crd = pos.coords;
-            currentPosition.lat = crd.latitude;
-            currentPosition.lng = crd.longitude;
-            if (crd.heading !== null && !isNaN(crd.heading) && crd.heading >= 0) {
-              currentPosition.heading = Math.round(crd.heading);
+            if (crd && crd.latitude && crd.longitude) {
+              applyGpsUpdate(crd.latitude, crd.longitude, crd.heading, crd.speed ? Math.round(crd.speed * 3.6) : 0, crd.accuracy, true);
+              audio.playRadarAlertChime();
             }
-            hasHadFirstGpsFix = true;
-            if (map) {
-              map.setView([currentPosition.lat, currentPosition.lng], 16);
-            }
-            if (carMarker) {
-              carMarker.setLatLng([currentPosition.lat, currentPosition.lng]);
-            }
-            updateRadarState();
-            startLiveGps();
-            audio.playRadarAlertChime();
           },
-          (err) => {
-            console.warn("GPS ruxsat berish xatosi:", err.message);
-            startLiveGps();
-          },
-          { enableHighAccuracy: true, timeout: 8000 }
+          () => {},
+          { enableHighAccuracy: false, timeout: 2000, maximumAge: 600000 }
         );
-      } else {
-        startLiveGps();
       }
+
+      startLiveGps();
     });
   }
 
