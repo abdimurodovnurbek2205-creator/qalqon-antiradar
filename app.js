@@ -397,6 +397,44 @@ class RadarEngineCore {
 }
 
 // Professional Real Radar Sound Engine - Neoline Standarti
+function createKeepAliveWavBlobUrl(durationSeconds = 15) {
+  const sampleRate = 8000;
+  const numSamples = sampleRate * durationSeconds;
+  const dataSize = numSamples * 2;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  const writeStr = (offset, str) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  };
+
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  // Inson qulog'iga eshitilmaydigan (-80dB), lekin Android MediaSession qulf ekranida
+  // haqiqiy pleer sifatida ko'rsatishi uchun 15 soniyalik uzluksiz mikro-signal
+  for (let i = 0; i < numSamples; i++) {
+    const sample = (i % 2 === 0) ? 2 : -2;
+    view.setInt16(44 + i * 2, sample, true);
+  }
+
+  const blob = new Blob([buffer], { type: 'audio/wav' });
+  return URL.createObjectURL(blob);
+}
+
 class AudioCore {
   constructor() {
     this.muted = false;
@@ -411,7 +449,9 @@ class AudioCore {
     this.lastOverSpeedAlarmTime = 0;
     this.activeCameraId = null;
     this.unlocked = false;
+    this.isExiting = false;
     this.keepAliveAudio = null;
+    this.keepAliveBlobUrl = null;
 
     // Neoline va Tizim tovushlari
     const tones = [
@@ -440,51 +480,94 @@ class AudioCore {
   }
 
   unlock() {
-    if (this.unlocked) return;
-    this.unlocked = true;
-    try {
-      const ch = this.audioCache['neoline_chirp.wav'];
-      if (ch) {
-        ch.volume = 0.01;
-        ch.play().then(() => {
-          ch.pause();
-          ch.currentTime = 0;
-          ch.volume = this.volume;
-        }).catch(() => {});
+    if (!this.unlocked) {
+      this.unlocked = true;
+      try {
+        const ch = this.audioCache['neoline_chirp.wav'];
+        if (ch) {
+          ch.volume = 0.01;
+          ch.play().then(() => {
+            ch.pause();
+            ch.currentTime = 0;
+            ch.volume = this.volume;
+          }).catch(() => {});
+        }
+      } catch (e) {}
+
+      const pill = document.getElementById('audio-unlock-overlay');
+      if (pill) {
+        pill.classList.add('fade-out');
+        setTimeout(() => pill.remove(), 600);
       }
-    } catch (e) {}
+    }
 
-    // Telefon qulflanganda ham audio va GPS to‘xtab qolmasligi uchun jimjit orqa fon oqimi
+    // Har safar ekran bosilganda orqa fon audio va PiP video oqimi uyg'oq ekanini tekshirish
     this.startBackgroundKeepAlive();
-
-    const pill = document.getElementById('audio-unlock-overlay');
-    if (pill) {
-      pill.classList.add('fade-out');
-      setTimeout(() => pill.remove(), 600);
+    if (typeof PipManager !== 'undefined') {
+      PipManager.ensureMediaReady();
+    }
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
     }
   }
 
   startBackgroundKeepAlive() {
-    if (this.keepAliveAudio) return;
+    if (this.isExiting) return;
     try {
-      // 1 soniyalik jimjit (silent) audio orqa fonda GPS va ovozlarni uxlatmaslik uchun
-      this.keepAliveAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
-      this.keepAliveAudio.loop = true;
-      this.keepAliveAudio.volume = 0.001;
-      this.keepAliveAudio.play().then(() => {
-        console.log('✅ Orqa fonda audio keepalive faol');
-      }).catch(() => {});
+      if (!this.keepAliveAudio) {
+        this.keepAliveBlobUrl = createKeepAliveWavBlobUrl(15);
+        this.keepAliveAudio = new Audio(this.keepAliveBlobUrl);
+        this.keepAliveAudio.loop = true;
+        // Volume 0.85 bo'lishi shart (ovozning o'zi -80dB jimjit), shunda Android Qulf Ekranida vidjet chiqaradi!
+        this.keepAliveAudio.volume = 0.85;
+        this.keepAliveAudio.muted = false;
 
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: '🛡️ Qalqon Radar — Jonli Nazorat',
-          artist: 'O‘zbekiston Yo‘llari',
-          album: 'Ekran qulflanganda ham faol'
+        // Telefon qulflanganda OS audioni pauza qilmoqchi bo'lsa, darhol qayta yoqish
+        this.keepAliveAudio.addEventListener('pause', () => {
+          if (!this.isExiting && document.visibilityState === 'hidden') {
+            this.keepAliveAudio.play().catch(() => {});
+          }
         });
-        navigator.mediaSession.playbackState = 'playing';
+
+        // Orqa fonda va ekran qulfida har 250ms da ishlaydigan taymer (GPS, PiP va LockScreen uchun)
+        this.keepAliveAudio.addEventListener('timeupdate', () => {
+          if (typeof PipManager !== 'undefined') {
+            PipManager.draw();
+            if (PipManager.video && PipManager.video.paused && !PipManager.isPaused && !this.isExiting) {
+              PipManager.video.play().catch(() => {});
+            }
+          }
+          if (typeof currentPosition !== 'undefined' && typeof engine !== 'undefined') {
+            const spd = currentPosition.speed || 0;
+            const al = engine.check(currentPosition);
+            updateLockScreenStatus(spd, al.length > 0 ? al[0] : null, false);
+          }
+        });
+      }
+
+      if (this.keepAliveAudio.paused) {
+        this.keepAliveAudio.play().then(() => {
+          console.log('✅ 15s Qulf ekrani (LockScreen) audio oqimi faol');
+          if (typeof currentPosition !== 'undefined' && typeof engine !== 'undefined') {
+            const spd = currentPosition.speed || 0;
+            const al = engine.check(currentPosition);
+            updateLockScreenStatus(spd, al.length > 0 ? al[0] : null, true);
+          }
+        }).catch(() => {});
       }
     } catch (e) {
       console.warn('Keepalive audio xatosi:', e);
+    }
+  }
+
+  stopKeepAlive() {
+    this.isExiting = true;
+    if (this.keepAliveAudio) {
+      try {
+        this.keepAliveAudio.pause();
+        this.keepAliveAudio.src = '';
+      } catch (e) {}
+      this.keepAliveAudio = null;
     }
   }
 
@@ -506,19 +589,13 @@ class AudioCore {
       this.activeAudios.clear();
     }
 
-    // 3. Keshdagi tovushlarni ham to'xtatish
+    // 3. Keshdagi tovushlarni ham to'xtatish (lekin keepAliveAudio o'chirilmaydi!)
     Object.values(this.audioCache).forEach(a => {
       try {
         a.pause();
         a.currentTime = 0;
       } catch (e) {}
     });
-
-    if (this.keepAliveAudio) {
-      try {
-        this.keepAliveAudio.pause();
-      } catch (e) {}
-    }
 
     // 4. Test tugmasining holatini tiklash
     const soundTestBtn = document.getElementById('btn-sound-test');
@@ -1111,39 +1188,96 @@ function updateRadarState() {
     PipManager.draw();
   }
 
-  // Telefon qulflanganda qulf ekranidagi MediaSession bildirishnomasini yangilash
+  // Telefon qulflanganda qulf ekranidagi MediaSession va Bildirishnomani yangilash
   const currentSpeed = (currentPosition && currentPosition.speed) ? currentPosition.speed : 0;
-  updateLockScreenStatus(currentSpeed, topAlert);
+  updateLockScreenStatus(currentSpeed, topAlert, false);
 }
 
-function updateLockScreenStatus(speed, topAlert) {
-  if (!('mediaSession' in navigator)) return;
-  try {
-    let title = `🛡️ ${speed} KM/H — Xavfsiz`;
-    let artist = "Yo'l ochiq, radarlar yo'q";
-    let album = "Qalqon Antiradar";
+let lastLockUpdateTime = 0;
+let lastLockSpeed = -1;
+let lastLockAlertId = '';
+let lastNotifyTime = 0;
 
-    if (topAlert && topAlert.camera) {
-      const cam = topAlert.camera;
-      const warn = topAlert.isOverSpeed ? '🚨 XAVF +' + topAlert.speedDiff + ' km/h' : '⚠️ RADAR';
-      title = `${warn} | ${speed} km/h (Cheklov: ${cam.speedLimit})`;
-      artist = `${topAlert.distance}m: ${cam.name}`;
-      album = cam.roadName || "O'zbekiston yo'llari";
-    }
+function updateLockScreenStatus(speed, topAlert, forceUpdate = false) {
+  const now = Date.now();
+  const alertId = topAlert && topAlert.camera ? `${topAlert.camera.id}-${Math.floor(topAlert.distance / 15)}` : 'clear';
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: title,
-      artist: artist,
-      album: album,
-      artwork: [
-        {
-          src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23070a10' stroke='%2300f2fe' stroke-width='4'/><path d='M50 15 L78 28 V52 C78 70 66 84 50 90 C34 84 22 70 22 52 V28 Z' fill='%230f172a' stroke='%2300f2fe' stroke-width='3'/><path d='M50 25 L68 34 V52 C68 64 60 74 50 80 C40 74 32 64 32 52 V34 Z' fill='%2300f2fe'/><circle cx='50' cy='52' r='8' fill='%23070a10'/></svg>",
-          sizes: "192x192 512x512",
-          type: "image/svg+xml"
+  if (!forceUpdate && speed === lastLockSpeed && alertId === lastLockAlertId && (now - lastLockUpdateTime < 2200)) {
+    return;
+  }
+
+  lastLockUpdateTime = now;
+  lastLockSpeed = speed;
+  lastLockAlertId = alertId;
+
+  let title = `🛡️ QALQON: ${speed} KM/S — Yo'l ochiq`;
+  let artist = "Cheklov: 60 km/s • Jonli GPS va Ovozli Himoya Faol";
+  let album = "Qalqon Antiradar O'zbekiston";
+  let isDanger = false;
+
+  if (topAlert && topAlert.camera) {
+    const cam = topAlert.camera;
+    isDanger = Boolean(topAlert.isOverSpeed);
+    const warn = isDanger ? `🚨 XAVF +${topAlert.speedDiff} KM/S` : `⚠️ RADAR ${topAlert.distance}m`;
+    title = `${warn} | ${cam.name}`;
+    artist = `Tezlik: ${speed} km/s (Cheklov: ${cam.speedLimit} km/s) • ${topAlert.distance} metr`;
+    album = cam.roadName || "O'zbekiston yo'llari";
+  }
+
+  // 1. Android Qulf Ekrani (Lock Screen) MediaSession Pleyer Vidjeti (Jonli Spidometr rasmi bilan!)
+  if ('mediaSession' in navigator) {
+    try {
+      if (typeof PipManager !== 'undefined') {
+        PipManager.draw();
+      }
+      const artworkList = [];
+      if (typeof PipManager !== 'undefined' && PipManager.canvas) {
+        try {
+          const livePng = PipManager.canvas.toDataURL('image/png');
+          artworkList.push({ src: livePng, sizes: '360x360', type: 'image/png' });
+        } catch (e) {}
+      }
+      const icon192 = new URL('./icon-192.png', window.location.href).href;
+      const icon512 = new URL('./icon-512.png', window.location.href).href;
+      artworkList.push({ src: icon192, sizes: '192x192', type: 'image/png' });
+      artworkList.push({ src: icon512, sizes: '512x512', type: 'image/png' });
+
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title,
+        artist: artist,
+        album: album,
+        artwork: artworkList
+      });
+      navigator.mediaSession.playbackState = 'playing';
+    } catch (e) {}
+  }
+
+  // 2. Android Qulf Ekrani va Yuqori Panel (Status Bar) Tizim Bildirishnomasi
+  if (forceUpdate || document.visibilityState === 'hidden' || (topAlert && (now - lastNotifyTime > 3500))) {
+    lastNotifyTime = now;
+    if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+      navigator.serviceWorker.ready.then((reg) => {
+        if (reg.active) {
+          reg.active.postMessage({
+            type: 'QALQON_LOCKSCREEN_NOTIFY',
+            title: title,
+            body: artist,
+            isDanger: isDanger
+          });
+        } else if (reg.showNotification) {
+          reg.showNotification(title, {
+            body: artist,
+            icon: './icon-192.png',
+            badge: './icon-192.png',
+            tag: 'qalqon-lockscreen-widget',
+            renotify: isDanger,
+            silent: !isDanger,
+            requireInteraction: true
+          }).catch(() => {});
         }
-      ]
-    });
-  } catch (e) {}
+      }).catch(() => {});
+    }
+  }
 }
 
 function updateNearbyCamsList() {
@@ -1184,8 +1318,7 @@ function updateNearbyCamsList() {
 }
 
 // ============================================================
-// 📌 PICTURE-IN-PICTURE (SUZUVCHI TO'RTBURCHAK MINI-OYNA)
-// Telefon o'rta (Home) tugmasi bosilganda yoki mini-oyna yoqilganda
+// 📌 PICTURE-IN-PICTURE VA QULF EKRANIDAN KEYIN YO'QOLMAYDIGAN MINI-OYNA
 // ============================================================
 function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
   ctx.beginPath();
@@ -1225,8 +1358,8 @@ function makeDraggable(el) {
     const touch = e.touches ? e.touches[0] : e;
     const dx = touch.clientX - startX;
     const dy = touch.clientY - startY;
-    const maxX = window.innerWidth - el.offsetWidth - 8;
-    const maxY = window.innerHeight - el.offsetHeight - 8;
+    const maxX = Math.max(8, window.innerWidth - el.offsetWidth - 8);
+    const maxY = Math.max(8, window.innerHeight - el.offsetHeight - 8);
     const newX = Math.max(8, Math.min(maxX, initialLeft + dx));
     const newY = Math.max(8, Math.min(maxY, initialTop + dy));
     el.style.left = `${newX}px`;
@@ -1252,6 +1385,7 @@ const FloatingWidget = {
   el: null,
   isPaused: false,
   isVisible: false,
+  userWanted: true, // Standart holatda faol — telefon qulfdan chiqqanda doimo ko'rinib turadi!
 
   init() {
     this.el = document.getElementById('floating-square-widget');
@@ -1263,6 +1397,7 @@ const FloatingWidget = {
     if (btnClose) {
       btnClose.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.userWanted = false;
         this.hide();
         if (typeof PipManager !== 'undefined') {
           PipManager.exit();
@@ -1279,18 +1414,36 @@ const FloatingWidget = {
     }
   },
 
+  syncVisibility() {
+    if (!this.el) return;
+    const osPipOpen = Boolean(document.pictureInPictureElement);
+    if (this.userWanted && !osPipOpen) {
+      this.isVisible = true;
+      this.el.classList.remove('hidden');
+      this.update();
+    } else if (osPipOpen) {
+      // OS PiP ochiqligida ikkita ustma-ust oyna bo'lmasligi uchun ichkisi vaqtincha yashirin turadi,
+      // lekin qulfga tushib OS PiP yopilishi bilan darhol avtomatik chiqadi!
+      this.el.classList.add('hidden');
+    } else {
+      this.isVisible = false;
+      this.el.classList.add('hidden');
+    }
+    if (typeof PipManager !== 'undefined') {
+      PipManager.updateButtons(this.userWanted || osPipOpen);
+    }
+  },
+
   show() {
     if (!this.el) return;
+    this.userWanted = true;
     this.isVisible = true;
-    this.el.classList.remove('hidden');
-    if (typeof PipManager !== 'undefined') {
-      PipManager.updateButtons(true);
-    }
-    this.update();
+    this.syncVisibility();
   },
 
   hide() {
     if (!this.el) return;
+    this.userWanted = false;
     this.isVisible = false;
     this.el.classList.add('hidden');
     if (typeof PipManager !== 'undefined') {
@@ -1299,7 +1452,7 @@ const FloatingWidget = {
   },
 
   toggle() {
-    if (this.isVisible) this.hide();
+    if (this.userWanted) this.hide();
     else this.show();
   },
 
@@ -1323,7 +1476,7 @@ const FloatingWidget = {
   },
 
   update() {
-    if (!this.el || !this.isVisible) return;
+    if (!this.el || (!this.isVisible && !this.userWanted)) return;
 
     const speed = (currentPosition && currentPosition.speed) ? currentPosition.speed : 0;
     const speedEl = document.getElementById('fsw-speed-val');
@@ -1375,7 +1528,9 @@ const PipManager = {
   isActive: false,
   isPaused: false,
   stream: null,
+  audioCtx: null,
   drawTimer: null,
+  needsReopenOnTouch: false,
 
   init() {
     this.canvas = document.getElementById('pip-canvas');
@@ -1384,51 +1539,158 @@ const PipManager = {
     this.video = document.getElementById('pip-video');
 
     if (this.video) {
+      this.video.autoPictureInPicture = true;
+
       this.video.addEventListener('enterpictureinpicture', () => {
         this.isActive = true;
+        this.needsReopenOnTouch = false;
+        if (typeof FloatingWidget !== 'undefined') {
+          FloatingWidget.userWanted = true;
+          FloatingWidget.syncVisibility();
+        }
         this.updateButtons(true);
       });
+
       this.video.addEventListener('leavepictureinpicture', () => {
         this.isActive = false;
-        this.updateButtons(false);
+        // Agar telefon qulflangani sababli OS PiP yopilgan bo'lsa, darhol ekran ichidagi Mini-oynani chiqaramiz!
+        if (typeof FloatingWidget !== 'undefined' && FloatingWidget.userWanted) {
+          this.needsReopenOnTouch = true;
+          FloatingWidget.syncVisibility();
+        } else {
+          this.updateButtons(false);
+        }
+      });
+
+      // Ekran qulflanganda Android videoni pauza qilib PiP-ni o'chirib qo'ymasligi uchun himoya
+      this.video.addEventListener('pause', () => {
+        if (!this.isPaused && typeof audio !== 'undefined' && !audio.isExiting) {
+          this.video.play().catch(() => {});
+        }
       });
     }
 
-    // MediaSession (Android PiP oynasi ustidagi boshqaruv tugmalari)
+    // MediaSession (Qulf ekrani va PiP oynasi ustidagi boshqaruv tugmalari)
     if ('mediaSession' in navigator) {
       try {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: 'Qalqon Radar',
-          artist: 'Jonli Antiradar',
-          album: 'O\'zbekiston Yo\'llari'
-        });
-
         navigator.mediaSession.setActionHandler('pause', () => {
           this.setPaused(true);
         });
         navigator.mediaSession.setActionHandler('play', () => {
           this.setPaused(false);
         });
-        navigator.mediaSession.setActionHandler('stop', () => {
-          this.exit();
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          this.setPaused(false);
         });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          this.setPaused(false);
+        });
+        try {
+          navigator.mediaSession.setActionHandler('enterpictureinpicture', () => {
+            this.enterOsPipOnly();
+          });
+        } catch (e) {}
       } catch (e) {}
     }
 
-    // Telefonning o'rta (Home) tugmasi bosilganda yoki brauzer minimallashganda suzuvchi oynaga o'tish
+    // 1. Telefon qulflanganda (hidden) va Qulfdan ochilganda (visible) Mini-oyna va Qulf Vidjetini boshqarish
     document.addEventListener('visibilitychange', () => {
+      const spd = (typeof currentPosition !== 'undefined' && currentPosition.speed) ? currentPosition.speed : 0;
+      const al = (typeof engine !== 'undefined' && typeof currentPosition !== 'undefined') ? engine.check(currentPosition) : [];
+      const topAl = al.length > 0 ? al[0] : null;
+
       if (document.visibilityState === 'hidden') {
-        if (!this.isActive && !this.isPaused && currentPosition) {
-          this.requestPip();
+        // Telefon qulflandi yoki fon rejimiga o'tdi:
+        // Hech qachon mini-oynani yopmaymiz! Aksincha, uni yoqilgan holatda saqlaymiz:
+        if (typeof FloatingWidget !== 'undefined') {
+          FloatingWidget.userWanted = true;
+          FloatingWidget.show();
         }
+        if (typeof audio !== 'undefined' && !audio.isExiting) {
+          audio.startBackgroundKeepAlive();
+        }
+        updateLockScreenStatus(spd, topAl, true);
+
+        if (!this.isActive && !this.isPaused) {
+          this.enterOsPipOnly();
+        }
+      } else if (document.visibilityState === 'visible') {
+        // Telefon qulfdan ochildi! Darhol Mini-oynani ekranda ko'rsatamiz!
+        if (typeof FloatingWidget !== 'undefined') {
+          FloatingWidget.userWanted = true;
+          FloatingWidget.show();
+        }
+        if (typeof WakeLockEngine !== 'undefined' && WakeLockEngine.isWanted) {
+          WakeLockEngine.request();
+        }
+        if (typeof audio !== 'undefined' && !audio.isExiting) {
+          audio.startBackgroundKeepAlive();
+        }
+        this.ensureMediaReady();
+        updateLockScreenStatus(spd, topAl, true);
       }
     });
+
+    // Qulf ochilgandan so'ng ekranga birinchi marta tekkan zahoti OS PiP ni ham qayta tiklash
+    const onTouchAfterUnlock = () => {
+      if (this.needsReopenOnTouch && FloatingWidget.userWanted && !this.isActive) {
+        this.needsReopenOnTouch = false;
+        this.ensureMediaReady();
+      }
+    };
+    window.addEventListener('touchstart', onTouchAfterUnlock, { passive: true });
+    window.addEventListener('click', onTouchAfterUnlock, { passive: true });
 
     this.draw();
     if (this.drawTimer) clearInterval(this.drawTimer);
     this.drawTimer = setInterval(() => {
       this.draw();
     }, 500);
+  },
+
+  ensureMediaReady() {
+    if (!this.video || !this.canvas) return;
+    try {
+      this.draw();
+      if (!this.stream) {
+        const canvasStream = this.canvas.captureStream(15);
+        const tracks = [...canvasStream.getVideoTracks()];
+
+        // Android Chrome ekran qulflanganda videoni o'chirmasligi uchun mikro-audio trek qo'shamiz
+        try {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) {
+            if (!this.audioCtx) this.audioCtx = new AC();
+            if (this.audioCtx.state === 'suspended') this.audioCtx.resume().catch(() => {});
+            const dest = this.audioCtx.createMediaStreamDestination();
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.frequency.value = 25;
+            gain.gain.value = 0.0001; // Inson qulog'iga mutlaqo eshitilmaydi (-80dB)
+            osc.connect(gain);
+            gain.connect(dest);
+            osc.start();
+            const audioTracks = dest.stream.getAudioTracks();
+            if (audioTracks.length > 0) {
+              tracks.push(audioTracks[0]);
+            }
+          }
+        } catch (e) {}
+
+        this.stream = new MediaStream(tracks);
+        this.video.srcObject = this.stream;
+        this.video.muted = false;
+        this.video.volume = 0.85;
+      } else if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
+
+      if (this.video.paused && !this.isPaused) {
+        this.video.play().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('Media stream tayyorlash xatosi:', e);
+    }
   },
 
   updateButtons(active) {
@@ -1449,42 +1711,61 @@ const PipManager = {
     this.setPaused(!this.isPaused);
   },
 
-  async requestPip() {
-    // 1. Ekranda to'rtburchak vidjetni ko'rsatish yoki yopish
-    if (typeof FloatingWidget !== 'undefined') {
-      if (FloatingWidget.isVisible) {
-        FloatingWidget.hide();
-        this.exit();
-        return;
-      } else {
-        FloatingWidget.show();
-      }
+  // Faqat OS Picture-in-Picture ga kirish (FloatingWidget ni hech qachon o'chirib qo'ymaydi!)
+  async enterOsPipOnly() {
+    if (!this.video || !(document.pictureInPictureEnabled || this.video.webkitSupportsPresentationMode)) {
+      return;
     }
-
-    // 2. Agar brauzerda OS Picture-in-Picture mavjud bo'lsa, tizim darajasida ham ochish
-    if (this.video && (document.pictureInPictureEnabled || this.video.webkitSupportsPresentationMode)) {
-      try {
-        this.draw();
-        if (!this.stream && this.canvas) {
-          this.stream = this.canvas.captureStream(25);
-          this.video.srcObject = this.stream;
-        }
-        this.video.muted = true;
-        await this.video.play();
-        if (document.pictureInPictureElement) {
-          await document.exitPictureInPicture();
-        } else if (this.video.requestPictureInPicture) {
+    try {
+      this.ensureMediaReady();
+      await this.video.play();
+      if (!document.pictureInPictureElement) {
+        if (this.video.requestPictureInPicture) {
           await this.video.requestPictureInPicture();
         } else if (this.video.webkitSetPresentationMode) {
           this.video.webkitSetPresentationMode('picture-in-picture');
         }
-      } catch (err) {
-        console.warn('OS PiP ogohlantirish:', err.message);
+      }
+    } catch (err) {
+      // OS PiP ruxsat bermasa, ichki FloatingWidget ekranda ko'rinib turaveradi
+      if (typeof FloatingWidget !== 'undefined' && FloatingWidget.userWanted) {
+        FloatingWidget.syncVisibility();
       }
     }
   },
 
+  // Pastki "📌 Mini-oyna" tugmasi bosilganda
+  async requestPip() {
+    if (typeof audio !== 'undefined') {
+      audio.unlock();
+    }
+
+    const currentlyOn = Boolean(document.pictureInPictureElement) || (typeof FloatingWidget !== 'undefined' && FloatingWidget.isVisible);
+
+    if (currentlyOn) {
+      // Agar mini-oyna allaqachon ochiq bo'lsa va foydalanuvchi tugmani qayta bossa:
+      // Agar OS PiP hali ochilmagan bo'lsa, avval OS PiP ga chiqarib ko'ramiz, aks holda yopamiz
+      if (!document.pictureInPictureElement && this.video && document.pictureInPictureEnabled) {
+        try {
+          this.ensureMediaReady();
+          await this.video.play();
+          await this.video.requestPictureInPicture();
+          return;
+        } catch (e) {}
+      }
+      this.exit();
+      return;
+    }
+
+    // Mini-oynani yoqish
+    if (typeof FloatingWidget !== 'undefined') {
+      FloatingWidget.show();
+    }
+    await this.enterOsPipOnly();
+  },
+
   exit() {
+    this.needsReopenOnTouch = false;
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture().catch(() => {});
     }
@@ -1618,7 +1899,7 @@ const PipManager = {
     ctx.fillStyle = this.isPaused ? '#f59e0b' : '#38bdf8';
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'center';
-    const pauseTxt = this.isPaused ? '▶️ Qayta yoqish (Play)' : '⏸️ To\'xtatish (Pause)';
+    const pauseTxt = this.isPaused ? '▶️ Qayta yoqish (Play)' : '🛡️ Qulf ekranida ham faol';
     ctx.fillText(pauseTxt, w / 2, h - 22);
   }
 };
@@ -1657,11 +1938,18 @@ function stopAndExitApp() {
   try {
     if (typeof audio !== 'undefined') {
       audio.stopAll();
+      audio.stopKeepAlive();
       audio.muted = true;
     }
   } catch (err) {
     console.warn("Audio to'xtatishda xatolik:", err);
   }
+
+  try {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'QALQON_CLEAR_NOTIFY' });
+    }
+  } catch (err) {}
 
   try {
     const exitModal = document.getElementById('exit-modal');
@@ -1810,16 +2098,18 @@ function toggleSettings() {
 window.addEventListener('DOMContentLoaded', () => {
   initMap();
 
-  // Foydalanuvchi ekranga bir marta tekkanda audioni faollashtirish va ekranni uyg'otish
-  const unlockEvents = ['touchstart', 'click', 'keydown'];
-  const onFirstInteraction = () => {
+  // Foydalanuvchi ekranga tekkanda (touchend / click) audioni, Qulf Ekrani vidjetini va WakeLock-ni 100% uyg'otish
+  const unlockEvents = ['touchend', 'pointerup', 'click', 'keydown'];
+  const onUserInteraction = () => {
     audio.unlock();
-    if (typeof WakeLockEngine !== 'undefined') {
+    if (typeof WakeLockEngine !== 'undefined' && WakeLockEngine.isWanted) {
       WakeLockEngine.request();
     }
-    unlockEvents.forEach(evt => window.removeEventListener(evt, onFirstInteraction));
+    if (typeof PipManager !== 'undefined') {
+      PipManager.ensureMediaReady();
+    }
   };
-  unlockEvents.forEach(evt => window.addEventListener(evt, onFirstInteraction, { passive: true }));
+  unlockEvents.forEach(evt => window.addEventListener(evt, onUserInteraction, { passive: true }));
 
   // Xaritada erkin yurgandan so'ng markazga qaytish FAB tugmasi
   const btnFloatingRecenter = document.getElementById('btn-floating-recenter');
@@ -1841,6 +2131,8 @@ window.addEventListener('DOMContentLoaded', () => {
     gpsModal.classList.remove('hidden');
   } else {
     startLiveGps();
+    // Darhol orqa fon va qulf ekrani oqimini ishga tushirishga urinish (TWA / APK ichida avtomatik ruxsat beriladi)
+    audio.startBackgroundKeepAlive();
   }
 
   if (btnGrantGps) {
