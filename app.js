@@ -1461,47 +1461,7 @@ function updateLockScreenStatus(speed, topAlert, forceUpdate = false) {
 }
 
 function updateNearbyCamsList() {
-  const container = document.getElementById('upcoming-list');
-  if (!container) return;
-
-  const sorted = speedCameras.map(cam => {
-    const d = RadarEngineCore.distance(currentPosition.lat, currentPosition.lng, cam.lat, cam.lng);
-    return { cam, distance: Math.round(d) };
-  }).sort((a, b) => a.distance - b.distance).slice(0, 4);
-
-  document.getElementById('nearby-cams-count').textContent = `${sorted.length} ta`;
-
-  container.innerHTML = sorted.map(item => {
-    let color = '#ef4444';
-    let icon = '🦅';
-    if (item.cam.type === 'rear') { color = '#d946ef'; icon = '🔄'; }
-    if (item.cam.type === 'uch_oyoq') { color = '#f97316'; icon = '📐'; }
-    if (item.cam.type === 'patrul_360') { color = '#eab308'; icon = '🚔'; }
-    if (item.cam.type === 'traffic_light') { color = '#8b5cf6'; icon = '🚦'; }
-    if (item.cam.type === 'bus_lane') { color = '#3b82f6'; icon = '🚌'; }
-
-    const safeId = String(item.cam.id).replace(/'/g, "\\'");
-
-    return `
-      <div class="cam-item-row">
-        <div class="cam-item-info" style="cursor:pointer;" onclick="if(typeof map!=='undefined'&&map){setFollowUser(false);map.flyTo([${item.cam.lat},${item.cam.lng}],17);}">
-          <span class="cam-type-badge">${icon}</span>
-          <div class="cam-item-text">
-            <b>${item.cam.name}</b>
-            <span>${item.cam.speedLimit || '—'} km/h</span>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <div class="cam-item-dist" style="color:${color};">
-            ${item.distance} m
-          </div>
-          <button type="button" onclick="event.stopPropagation(); window.deleteRadarById('${safeId}')" title="Ushbu radarni o'chirish" style="background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.5); color:#ff6b6b; border-radius:6px; padding:3px 6px; font-size:11px; cursor:pointer; line-height:1;">
-            🗑️
-          </button>
-        </div>
-      </div>
-    `;
-  }).join('');
+  // Haydovchi e'tiborini chalg'itmaslik uchun xaritadagi kichik ro'yxat olib tashlandi
 }
 
 // ============================================================
