@@ -908,10 +908,85 @@ function cycleMapLayer() {
   else setMapLayer('google');
 }
 
+// Radarni ID bo'yicha butunlay o'chirish (Xarita, Lokal xotira va Bulutdan)
+window.deleteRadarById = async function(camId) {
+  if (!camId) return;
+
+  speedCameras = speedCameras.filter(c => String(c.id) !== String(camId));
+  if (engine) {
+    engine.cameras = speedCameras;
+  }
+
+  if (audio && String(audio.activeCameraId) === String(camId)) {
+    audio.stopAll();
+    audio.activeCameraId = null;
+  }
+
+  if (window.QalqonCloud && typeof window.QalqonCloud.deleteCamera === 'function') {
+    window.QalqonCloud.deleteCamera(camId).catch(() => {});
+  } else {
+    try {
+      const del = JSON.parse(localStorage.getItem('qalqon_deleted_cameras') || '[]');
+      if (!del.includes(camId)) {
+        del.push(camId);
+        localStorage.setItem('qalqon_deleted_cameras', JSON.stringify(del));
+      }
+    } catch (e) {}
+  }
+
+  if (map) {
+    map.closePopup();
+  }
+  renderCamerasOnMap();
+  updateRadarState();
+};
+
+// Eng yaqin "Uch oyoq" yoki foydalanuvchi qo'shgan test radarni bitta tugma bilan o'chirish
+window.deleteNearestUchOyoq = async function() {
+  if (!speedCameras || speedCameras.length === 0) return;
+
+  // Avval foydalanuvchi qo'shgan (isCommunity / local-rep / comm-) yoki uch_oyoq radarlarni qidiramiz
+  const candidates = speedCameras.filter(c =>
+    c.isCommunity ||
+    String(c.id).startsWith('local-rep-') ||
+    String(c.id).startsWith('comm-') ||
+    c.type === 'uch_oyoq'
+  );
+
+  const listToSearch = candidates.length > 0 ? candidates : speedCameras;
+  let nearest = null;
+  let minDist = Infinity;
+
+  for (const c of listToSearch) {
+    const d = RadarEngineCore.distance(currentPosition.lat, currentPosition.lng, c.lat, c.lng);
+    if (d < minDist) {
+      minDist = d;
+      nearest = c;
+    }
+  }
+
+  if (nearest) {
+    const removedName = nearest.name;
+    await window.deleteRadarById(nearest.id);
+    const reportStatusMsg = document.getElementById('report-status-msg');
+    if (reportStatusMsg) {
+      reportStatusMsg.style.color = '#00ff66';
+      reportStatusMsg.innerText = `🗑️ O'chirildi: ${removedName}`;
+    }
+  }
+};
+
 // Radarlarni xaritaga chizish
 function renderCamerasOnMap() {
   if (!cameraMarkersLayer) return;
   cameraMarkersLayer.clearLayers();
+
+  const deletedIds = (window.QalqonCloud && typeof window.QalqonCloud.getDeletedIds === 'function')
+    ? window.QalqonCloud.getDeletedIds()
+    : [];
+
+  speedCameras = speedCameras.filter(c => !deletedIds.includes(c.id));
+  if (engine) engine.cameras = speedCameras;
 
   speedCameras.forEach(cam => {
     let color = '#ef4444'; // Lochin
@@ -933,12 +1008,16 @@ function renderCamerasOnMap() {
       iconAnchor: [17, 17]
     });
 
+    const safeId = String(cam.id).replace(/'/g, "\\'");
     const marker = L.marker([cam.lat, cam.lng], { icon }).addTo(cameraMarkersLayer);
     marker.bindPopup(`
-      <div style="color:#000; font-size:13px; font-weight:600; line-height:1.4;">
-        <div style="font-size:14px; font-weight:800; color:${color};">${cam.name}</div>
+      <div style="color:#000; font-size:13px; font-weight:600; line-height:1.4; min-width:170px;">
+        <div style="font-size:14px; font-weight:800; color:${color}; margin-bottom:2px;">${cam.name}</div>
         <div>Cheklov: <b>${cam.speedLimit || '—'} km/h</b></div>
-        <div>Manzil: ${cam.roadName}</div>
+        <div>Manzil: ${cam.roadName || 'Yo\'l'}</div>
+        <button type="button" onclick="window.deleteRadarById('${safeId}')" style="margin-top:8px; width:100%; background:#ef4444; color:#fff; border:none; border-radius:8px; padding:7px 10px; font-size:12px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 6px rgba(239,68,68,0.35);">
+          🗑️ Radarni o'chirish
+        </button>
       </div>
     `);
   });
@@ -1300,17 +1379,24 @@ function updateNearbyCamsList() {
     if (item.cam.type === 'traffic_light') { color = '#8b5cf6'; icon = '🚦'; }
     if (item.cam.type === 'bus_lane') { color = '#3b82f6'; icon = '🚌'; }
 
+    const safeId = String(item.cam.id).replace(/'/g, "\\'");
+
     return `
       <div class="cam-item-row">
-        <div class="cam-item-info">
+        <div class="cam-item-info" style="cursor:pointer;" onclick="if(typeof map!=='undefined'&&map){setFollowUser(false);map.flyTo([${item.cam.lat},${item.cam.lng}],17);}">
           <span class="cam-type-badge">${icon}</span>
           <div class="cam-item-text">
             <b>${item.cam.name}</b>
             <span>${item.cam.speedLimit || '—'} km/h</span>
           </div>
         </div>
-        <div class="cam-item-dist" style="color:${color};">
-          ${item.distance} m
+        <div style="display:flex; align-items:center; gap:6px;">
+          <div class="cam-item-dist" style="color:${color};">
+            ${item.distance} m
+          </div>
+          <button type="button" onclick="event.stopPropagation(); window.deleteRadarById('${safeId}')" title="Ushbu radarni o'chirish" style="background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.5); color:#ff6b6b; border-radius:6px; padding:3px 6px; font-size:11px; cursor:pointer; line-height:1;">
+            🗑️
+          </button>
         </div>
       </div>
     `;
@@ -2180,6 +2266,10 @@ window.addEventListener('DOMContentLoaded', () => {
   // RADARLAR BAZASINI AVTOMATIK YUKLASH (CLOUD & LOKAL KESH)
   // ============================================================
   async function loadCameras() {
+    const deletedIds = (window.QalqonCloud && typeof window.QalqonCloud.getDeletedIds === 'function')
+      ? window.QalqonCloud.getDeletedIds()
+      : [];
+
     let cloudLoaded = false;
     if (window.QalqonCloud && window.QalqonCloud.isConfigured()) {
       try {
@@ -2187,12 +2277,12 @@ window.addEventListener('DOMContentLoaded', () => {
         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Cloud timeout')), 2500));
         const cloudCams = await Promise.race([cloudPromise, timeoutPromise]);
         if (Array.isArray(cloudCams) && cloudCams.length > 0) {
-          speedCameras = cloudCams;
-          engine.cameras = cloudCams;
+          speedCameras = cloudCams.filter(c => !deletedIds.includes(c.id));
+          engine.cameras = speedCameras;
           renderCamerasOnMap();
           updateNearbyCamsList();
           cloudLoaded = true;
-          console.log(`✅ Supabase Cloud-dan ${cloudCams.length} ta radar yuklandi!`);
+          console.log(`✅ Supabase Cloud-dan ${speedCameras.length} ta radar yuklandi!`);
         }
       } catch (err) {
         console.warn('Supabase cloud fetch failed or timed out, falling back:', err.message);
@@ -2205,11 +2295,11 @@ window.addEventListener('DOMContentLoaded', () => {
         .then(r => r.json())
         .then(data => {
           if (Array.isArray(data) && data.length > 0) {
-            speedCameras = data;
-            engine.cameras = data;
+            speedCameras = data.filter(c => !deletedIds.includes(c.id));
+            engine.cameras = speedCameras;
             renderCamerasOnMap();
             updateNearbyCamsList();
-            console.log(`✅ Lokal bazadan ${data.length} ta radar yuklandi!`);
+            console.log(`✅ Lokal bazadan ${speedCameras.length} ta radar yuklandi!`);
           }
         }).catch(err => {
           console.warn('speedcams.json yuklashda xatolik:', err);
@@ -2223,6 +2313,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // Jonli sinxronizatsiya: boshqa haydovchilar belgilagan radarlarni qabul qilish
   if (window.QalqonCloud) {
     window.QalqonCloud.subscribe((newCam) => {
+      const deletedIds = typeof window.QalqonCloud.getDeletedIds === 'function'
+        ? window.QalqonCloud.getDeletedIds()
+        : [];
+      if (deletedIds.includes(newCam.id)) return;
+
       const exists = speedCameras.find(c => c.id === newCam.id);
       if (!exists) {
         speedCameras.unshift(newCam);
@@ -2242,7 +2337,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // HAYDOVCHI TOMONIDAN RADAR BELGILASH (COMMUNITY MODAL)
+  // HAYDOVCHI TOMONIDAN RADAR BELGILASH VA O'CHIRISH (COMMUNITY MODAL)
   // ============================================================
   const reportModal = document.getElementById('report-modal');
   const btnReportCam = document.getElementById('btn-report-cam');
@@ -2295,6 +2390,7 @@ window.addEventListener('DOMContentLoaded', () => {
     btnSubmitReport.addEventListener('click', async () => {
       const lat = currentPosition.lat;
       const lng = currentPosition.lng;
+      const detectedRoad = detectRegionName(lat, lng) || "Yo'l";
 
       btnSubmitReport.disabled = true;
       btnSubmitReport.innerHTML = '<span>⏳</span> Belgilanmoqda...';
@@ -2304,23 +2400,24 @@ window.addEventListener('DOMContentLoaded', () => {
         lng: lng,
         type: selectedReportType,
         speedLimit: selectedReportSpeed,
-        roadName: currentCity || "Yo'l",
+        roadName: detectedRoad,
         description: "Haydovchi tomonidan belgilandi"
       };
 
       try {
         const res = await window.QalqonCloud.reportCamera(reportData);
+        const newCamId = (res && res.data && res.data.id) ? `comm-${res.data.id}` : `local-rep-${Date.now()}`;
 
         // Darhol xaritaga lokal marker qo'shish
         const localCam = {
-          id: `local-rep-${Date.now()}`,
+          id: newCamId,
           name: `⚠️ ${selectedReportType === 'uch_oyoq' ? 'Uch oyoq radar' : selectedReportType === 'patrul_360' ? 'Patrul 360' : 'Yangi radar'}`,
           lat: lat,
           lng: lng,
           type: selectedReportType,
           speedLimit: selectedReportSpeed,
           azimuth: -1,
-          roadName: currentCity || "Haydovchi belgilagan",
+          roadName: `${detectedRoad} (Haydovchi belgilagan)`,
           distanceAlertThreshold: 550,
           isCommunity: true
         };
@@ -2329,13 +2426,14 @@ window.addEventListener('DOMContentLoaded', () => {
         engine.cameras = speedCameras;
         renderCamerasOnMap();
         updateNearbyCamsList();
+        updateRadarState();
 
         audio.playRadarAlertChime();
         if (reportStatusMsg) {
           reportStatusMsg.style.color = '#00ff66';
           reportStatusMsg.innerText = res.offline
-            ? "✅ Lokal saqlandi! (Internet paydo bo'lganda bulutga sinxronlanadi)"
-            : "✅ Muvaffaqiyatli bulutga yuklandi!";
+            ? "✅ Lokal saqlandi! (O'chirish uchun marker ustiga bosing)"
+            : "✅ Muvaffaqiyatli qo'shildi!";
         }
 
         setTimeout(() => {

@@ -7,6 +7,35 @@ const SUPABASE_STORAGE_KEY_URL = 'qalqon_supabase_url';
 const SUPABASE_STORAGE_KEY_KEY = 'qalqon_supabase_anon_key';
 const LOCAL_CAMERAS_CACHE_KEY = 'qalqon_cached_cameras';
 const PENDING_REPORTS_KEY = 'qalqon_pending_reports';
+const DELETED_CAMERAS_KEY = 'qalqon_deleted_cameras';
+const CLEANUP_TEST_RADARS_KEY = 'qalqon_clean_test_v1031';
+
+// Noto'g'ri qo'shilgan test "uch oyoq" radarlarni keshdan va navbatdan bir martalik avtomatik tozalash
+try {
+  if (!localStorage.getItem(CLEANUP_TEST_RADARS_KEY)) {
+    localStorage.removeItem(PENDING_REPORTS_KEY);
+    localStorage.removeItem(LOCAL_CAMERAS_CACHE_KEY);
+    localStorage.setItem(CLEANUP_TEST_RADARS_KEY, '1');
+  }
+} catch (e) {}
+
+function getDeletedCameraIds() {
+  try {
+    return JSON.parse(localStorage.getItem(DELETED_CAMERAS_KEY) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function addDeletedCameraId(camId) {
+  try {
+    const list = getDeletedCameraIds();
+    if (!list.includes(camId)) {
+      list.push(camId);
+      localStorage.setItem(DELETED_CAMERAS_KEY, JSON.stringify(list));
+    }
+  } catch (e) {}
+}
 
 // Standart konfiguratsiya (Settings orqali o'zgartirish mumkin)
 const DEFAULT_SUPABASE_URL = 'https://khfpsjlelicajcycjrag.supabase.co';
@@ -63,12 +92,23 @@ function configureSupabase(url, key) {
  * @returns {Promise<Array>} Radarlar ro'yxati
  */
 async function fetchCamerasFromCloud() {
+  const deletedIds = getDeletedCameraIds();
+
   if (!supabaseClient) {
     // Agar bulut ulanmagan bo'lsa, lokal kesh yoki speedcams.json qaytariladi
-    return getCachedCameras();
+    const cached = getCachedCameras();
+    return cached ? cached.filter(c => !deletedIds.includes(c.id)) : null;
   }
 
   try {
+    // Bir martalik bulutdagi test community_reports yozuvlarini tozalash
+    if (!localStorage.getItem('qalqon_cloud_test_purged_v1031')) {
+      try {
+        await supabaseClient.from('community_reports').delete().eq('type', 'uch_oyoq');
+        localStorage.setItem('qalqon_cloud_test_purged_v1031', '1');
+      } catch (e) {}
+    }
+
     // 1. Asosiy statsionar radarlar (barcha 1000+ radarni to'liq olish)
     const { data: mainCams, error: mainErr } = await supabaseClient
       .from('speed_cameras')
@@ -110,7 +150,7 @@ async function fetchCamerasFromCloud() {
       isCommunity: true
     }));
 
-    const combined = [...formattedMain, ...formattedCommunity];
+    const combined = [...formattedMain, ...formattedCommunity].filter(c => !deletedIds.includes(c.id));
     
     // Offline uchun keshga saqlash
     if (combined.length > 0) {
@@ -123,7 +163,8 @@ async function fetchCamerasFromCloud() {
     return combined;
   } catch (error) {
     console.warn('⚠️ Supabase-dan olishda xatolik, keshdan foydalaniladi:', error.message);
-    return getCachedCameras();
+    const cached = getCachedCameras();
+    return cached ? cached.filter(c => !deletedIds.includes(c.id)) : null;
   }
 }
 
@@ -134,7 +175,8 @@ function getCachedCameras() {
   const cached = localStorage.getItem(LOCAL_CAMERAS_CACHE_KEY);
   if (cached) {
     try {
-      return JSON.parse(cached);
+      const deletedIds = getDeletedCameraIds();
+      return JSON.parse(cached).filter(c => !deletedIds.includes(c.id));
     } catch (e) {
       // ignore
     }
@@ -235,12 +277,47 @@ function subscribeToCommunityUpdates(onNewRadarCallback) {
     .subscribe();
 }
 
+/**
+ * Radarni o'chirish (lokal keshdan, ro'yxatdan va bulutdan)
+ */
+async function deleteCameraFromCloud(camId) {
+  if (!camId) return { success: false };
+
+  addDeletedCameraId(camId);
+
+  // Lokal keshdan ham olib tashlash
+  try {
+    const cached = localStorage.getItem(LOCAL_CAMERAS_CACHE_KEY);
+    if (cached) {
+      const filtered = JSON.parse(cached).filter(c => c.id !== camId);
+      localStorage.setItem(LOCAL_CAMERAS_CACHE_KEY, JSON.stringify(filtered));
+    }
+  } catch (e) {}
+
+  if (supabaseClient) {
+    try {
+      if (String(camId).startsWith('comm-')) {
+        const rawId = String(camId).replace('comm-', '');
+        await supabaseClient.from('community_reports').delete().eq('id', rawId);
+      } else {
+        await supabaseClient.from('speed_cameras').update({ is_active: false }).eq('id', camId);
+      }
+    } catch (e) {
+      console.warn('Bulutdan radarni o\'chirish ogohlantirishi:', e.message);
+    }
+  }
+
+  return { success: true };
+}
+
 // Global obyektga eksport qilish
 window.QalqonCloud = {
   init: initSupabaseClient,
   configure: configureSupabase,
   fetchCameras: fetchCamerasFromCloud,
   reportCamera: reportCameraToCloud,
+  deleteCamera: deleteCameraFromCloud,
+  getDeletedIds: getDeletedCameraIds,
   subscribe: subscribeToCommunityUpdates,
   getCached: getCachedCameras,
   isConfigured: () => Boolean(supabaseClient),
