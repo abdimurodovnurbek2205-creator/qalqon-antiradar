@@ -3,21 +3,21 @@
  * Qotib qolishlarni bartaraf etuvchi, tezkor reload va offline himoya
  */
 
-const CACHE_NAME = 'qalqon-v2-1033';
+const CACHE_NAME = 'qalqon-v2-1034';
 const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
-  './style.css?v=2.1033',
+  './style.css?v=2.1034',
   './app.js',
-  './app.js?v=2.1033',
+  './app.js?v=2.1034',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './screenshot.png',
   './src/data/speedcams.json',
   './src/supabaseClient.js',
-  './src/supabaseClient.js?v=2.1033'
+  './src/supabaseClient.js?v=2.1034'
 ];
 
 // 1. O'rnatish: Faqat asosiy kerakli fayllarni tezkor (0.5 soniyada) keshga olamiz

@@ -2340,47 +2340,51 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // RADARLAR BAZASINI AVTOMATIK YUKLASH (CLOUD & LOKAL KESH)
+  // RADARLAR BAZASINI AVTOMATIK YUKLASH (LOKAL 1,191+ RADAR VA CLOUD)
   // ============================================================
   async function loadCameras() {
     const deletedIds = (window.QalqonCloud && typeof window.QalqonCloud.getDeletedIds === 'function')
       ? window.QalqonCloud.getDeletedIds()
       : [];
 
-    let cloudLoaded = false;
-    if (window.QalqonCloud && window.QalqonCloud.isConfigured()) {
-      try {
-        const cloudPromise = window.QalqonCloud.fetchCameras();
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Cloud timeout')), 2500));
-        const cloudCams = await Promise.race([cloudPromise, timeoutPromise]);
-        if (Array.isArray(cloudCams) && cloudCams.length > 0) {
-          speedCameras = cloudCams.filter(c => !deletedIds.includes(c.id));
-          engine.cameras = speedCameras;
-          renderCamerasOnMap();
-          updateNearbyCamsList();
-          cloudLoaded = true;
-          console.log(`✅ Supabase Cloud-dan ${speedCameras.length} ta radar yuklandi!`);
-        }
-      } catch (err) {
-        console.warn('Supabase cloud fetch failed or timed out, falling back:', err.message);
+    // 1. Zudlik bilan lokal to'liq 1,191 ta radarni yuklaymiz (Oflayn va tog' yo'llari uchun 100% kafolat)
+    try {
+      const resp = await fetch('src/data/speedcams.json');
+      const localData = await resp.json();
+      if (Array.isArray(localData) && localData.length > 0) {
+        speedCameras = localData.filter(c => !deletedIds.includes(c.id));
+        engine.cameras = speedCameras;
+        renderCamerasOnMap();
+        console.log(`✅ O'zbekiston bo'yicha ${speedCameras.length} ta radar bazasi yuklandi!`);
       }
+    } catch (e) {
+      console.warn("speedcams.json yuklash ogohlantirish:", e);
     }
 
-    if (!cloudLoaded) {
-      // Oflayn yoki lokal bazadan 1,014 ta radarni yuklash
-      fetch('src/data/speedcams.json')
-        .then(r => r.json())
-        .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            speedCameras = data.filter(c => !deletedIds.includes(c.id));
+    // 2. Bulutdan (Supabase) yangi qo'shilgan radarlar va o'zgarishlarni birlashtirish
+    if (window.QalqonCloud && window.QalqonCloud.isConfigured()) {
+      try {
+        const cloudCams = await window.QalqonCloud.fetchCameras();
+        if (Array.isArray(cloudCams) && cloudCams.length > 0) {
+          const mapById = new Map();
+          speedCameras.forEach(c => mapById.set(String(c.id), c));
+          let newCloudAdded = 0;
+          cloudCams.forEach(c => {
+            if (!deletedIds.includes(c.id) && !mapById.has(String(c.id))) {
+              speedCameras.push(c);
+              mapById.set(String(c.id), c);
+              newCloudAdded++;
+            }
+          });
+          if (newCloudAdded > 0) {
             engine.cameras = speedCameras;
             renderCamerasOnMap();
-            updateNearbyCamsList();
-            console.log(`✅ Lokal bazadan ${speedCameras.length} ta radar yuklandi!`);
+            console.log(`✅ Bulutdan ${newCloudAdded} ta yangi radar qo'shildi. Jami: ${speedCameras.length} ta!`);
           }
-        }).catch(err => {
-          console.warn('speedcams.json yuklashda xatolik:', err);
-        });
+        }
+      } catch (err) {
+        console.warn('Supabase cloud fetch failed or timed out:', err.message);
+      }
     }
   }
 
